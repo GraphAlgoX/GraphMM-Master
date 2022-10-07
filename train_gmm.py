@@ -12,7 +12,7 @@ from tqdm import tqdm
 import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score
-import torch.onnx
+# from torchviz import make_dot
 
 
 def train(model, train_iter, loss_fn, optimizer, device, gdata, tf_ratio):
@@ -34,6 +34,8 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, tf_ratio):
                     tgt_roads=tgt_roads,
                     gdata=gdata,
                     tf_ratio=tf_ratio)
+        # g = make_dot(y_pred, params=dict(model.named_parameters()))
+        # g.render('gmm', view=False)
         # print(y_pred.shape, tgt_roads.shape)
         mask = (tgt_roads.view(-1) != -1)
         loss = loss_fn(y_pred.view(-1, y_pred.shape[-1])[mask], tgt_roads.view(-1)[mask])
@@ -117,7 +119,7 @@ def main(args):
     print("Loading model Done!!!")
     loss_fn = nn.CrossEntropyLoss()
     # loss_fn = nn.NLLLoss()
-    optimizer = optim.Adam(params=model.parameters(),
+    optimizer = optim.AdamW(params=model.parameters(),
                             lr=args['lr'],
                             weight_decay=args['wd'])
     for e in range(args['epochs']):

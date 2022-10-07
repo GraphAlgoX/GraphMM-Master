@@ -7,6 +7,7 @@ from model.TraceGCN import TraceGCN
 from model.seq2seq import Seq2Seq
 from model.graphfilter import GraphFilter
 import torch.nn.functional as F
+from torch_geometric.nn import MLP
 
 
 def argmax(vec):
@@ -39,11 +40,14 @@ class GMM(nn.Module):
         self.atten_flag = atten_flag
         self.road_gcn = RoadGCN(loc_dim)
         self.trace_gcn = TraceGCN(loc_dim)
-        self.seq2seq = Seq2Seq(input_size=8 * loc_dim,
+        self.seq2seq = Seq2Seq(input_size=12 * loc_dim,
                                hidden_size=4 * loc_dim,
                                atten_flag=atten_flag)
         self.graphfilter = GraphFilter(emb_dim=4 * loc_dim)
+        self.exp_fc_road = MLP([4, 2 * loc_dim, 4 * loc_dim])
+        self.exp_fc_traj = nn.Linear(2, 4 * loc_dim)
         self.norm = nn.BatchNorm1d(4)
+        self.norm1 = nn.BatchNorm1d(2)
 
     def forward(self, grid_traces, tgt_roads, traces_gps, traces_lens,
                 road_lens, gdata, tf_ratio):
@@ -116,10 +120,11 @@ class GMM(nn.Module):
         """
         gain road embedding and grid embedding
         """
-        full_road_emb = self.road_gcn(self.norm(gdata.road_x), gdata.road_adj)
+        road_x = self.exp_fc_road(self.norm(gdata.road_x))
+        full_road_emb = self.road_gcn(road_x, gdata.road_adj)
         # [num_of_grid, 4*loc]
         pure_grid_feat = torch.mm(gdata.map_matrix, full_road_emb)
-        pure_grid_feat[gdata.singleton_grid_mask] = self.norm(gdata.singleton_grid_location)
+        pure_grid_feat[gdata.singleton_grid_mask] = self.exp_fc_road(self.norm(gdata.singleton_grid_location))
         full_grid_emb = torch.zeros(gdata.num_grids + 1, 8 * self.loc_dim).to(self.device)
         full_grid_emb[1:, :] = self.trace_gcn(pure_grid_feat,
                                               gdata.trace_inadj,
@@ -152,7 +157,7 @@ class GMM(nn.Module):
         else:
             constraint = easy_filter_cache[lst_road_id.squeeze(1)]  # [B, N]
         # h_iH_R \odot f(A_R)
-        prob = (rnn_out @ full_road_emb.detach().T).squeeze(0) * constraint
+        prob = (rnn_out @ full_road_emb.detach().T).squeeze(0)
         # prob = mask_log_softmax(prob, constraint, log_flag=False)
 
         return prob
@@ -161,7 +166,7 @@ class GMM(nn.Module):
                   road_lens, tf_ratio, full_road_emb, full_grid_emb,
                   easy_filter_cache, gdata):
         """
-        decode max_trace_lens times for tgt roads
+        decode max_trace_lens times for tgt
         grid_traces: (batch_size, max_trace_lens)
         tgt_roads: (batch_size, max_road_lens)
         return (batch_size, max_road_lens, num_roads)
@@ -173,6 +178,9 @@ class GMM(nn.Module):
             max_RL = int(max(road_lens))
 
         rnn_input = full_grid_emb[grid_traces]
+        traces_gps = self.norm1(traces_gps.permute(0, 2, 1)).permute(0, 2, 1)
+        traces_gps = self.exp_fc_traj(traces_gps)
+        rnn_input = torch.cat((rnn_input, traces_gps), dim=-1)
         encoder_outputs, hiddens = self.seq2seq.encode(rnn_input, trace_lens)
         # start decode
         probs = torch.zeros(B, max_RL, gdata.num_roads).to(self.device)
