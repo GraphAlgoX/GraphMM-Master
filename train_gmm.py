@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 from config import get_params
 from nni.utils import merge_parameter
-from model.gmm_model import GMM
+from model.gmm import GMM
 from utils_gq.data_loader import MyDataset, padding
 from torch.utils.data import DataLoader
 from graph_data import GraphData

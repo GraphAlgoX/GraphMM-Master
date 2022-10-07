@@ -114,64 +114,6 @@ class GMM(nn.Module):
         # return score, infer_output
         return None, F.softmax(emissions, dim=-1)
 
-    def transition(self, tag1, tag2, full_road_emb, A_list):
-        """
-        tag1, tag2: (batch_size,)
-        """
-        # (batch_size, road_emb_size)
-        hidden1 = full_road_emb[tag1]
-        hidden2 = full_road_emb[tag2]
-        return self.graphfilter.binary_loss_batch(tag1, tag2, hidden1, hidden2,
-                                                  A_list)
-
-    def transitions(self, next_tag, full_road_emb, A_list):
-        transitions = self.graphfilter.get_hard_filter(full_road_emb, next_tag,
-                                                       A_list)
-        return transitions
-
-    def negative_sample_sum_single(self, emissions, full_road_emb, A_list):
-        """
-        reduce the transition states
-        """
-        # Do the forward algorithm to compute the partition function
-        forward_var = torch.full((1, self.target_size), 0.).to(self.device)
-        # Wrap in a variable so that we will get automatic backprop
-        forward_var[0] = emissions[0]
-        # Iterate through the sentence
-        for feat in emissions[1:, :]:
-            alphas_t = (torch.ones(1, self.target_size) * float('-inf')).to(
-                self.device)  # The forward tensors at this timestep
-
-            _, index = forward_var.topk(self.beam_size, largest=True)
-            next_tag_set = A_list[:, index.squeeze(0), :].sum(dim=0).sum(dim=0).nonzero().squeeze(1)
-
-            for next_tag in next_tag_set:
-                # broadcast the emission score: it is the same regardless of
-                # the previous tag
-                emit_score = feat[next_tag].view(1, -1)
-                # the ith entry of trans_score is the score of transitioning to
-                # next_tag from i
-                trans_score = self.transitions(next_tag, full_road_emb, A_list)
-
-                # The ith entry of next_tag_var is the value for the
-                # edge (i -> next_tag) before we do log-sum-exp
-                next_tag_var = forward_var + trans_score + emit_score
-                # The forward variable for this tag is log-sum-exp of all the
-                # scores.
-                alphas_t[:, next_tag] = log_sum_exp(next_tag_var).view(1)
-                # alphas_t.append(log_sum_exp(next_tag_var).view(1))
-
-            forward_var = alphas_t
-
-        terminal_var = forward_var
-
-        value, _ = terminal_var.topk(self.beam_size, largest=True)
-        # * n/beamsize
-        alpha = log_sum_exp(value) + math.log(
-            self.target_size / self.beam_size)
-        del forward_var, alphas_t
-        return alpha
-
     def get_emb(self, gdata):
         full_road_emb = self.road_gcn(self.norm(gdata.road_x), gdata.road_adj)
         # [num_of_grid, 4*loc]
@@ -272,6 +214,65 @@ class GMM(nn.Module):
                 lst_road_id = probs[:, t, :].argmax(1)
 
         return probs
+
+    ##################functions for CRF##################
+    def transition(self, tag1, tag2, full_road_emb, A_list):
+        """
+        tag1, tag2: (batch_size,)
+        """
+        # (batch_size, road_emb_size)
+        hidden1 = full_road_emb[tag1]
+        hidden2 = full_road_emb[tag2]
+        return self.graphfilter.binary_loss_batch(tag1, tag2, hidden1, hidden2,
+                                                  A_list)
+
+    def transitions(self, next_tag, full_road_emb, A_list):
+        transitions = self.graphfilter.get_hard_filter(full_road_emb, next_tag,
+                                                       A_list)
+        return transitions
+
+    def negative_sample_sum_single(self, emissions, full_road_emb, A_list):
+        """
+        reduce the transition states
+        """
+        # Do the forward algorithm to compute the partition function
+        forward_var = torch.full((1, self.target_size), 0.).to(self.device)
+        # Wrap in a variable so that we will get automatic backprop
+        forward_var[0] = emissions[0]
+        # Iterate through the sentence
+        for feat in emissions[1:, :]:
+            alphas_t = (torch.ones(1, self.target_size) * float('-inf')).to(
+                self.device)  # The forward tensors at this timestep
+
+            _, index = forward_var.topk(self.beam_size, largest=True)
+            next_tag_set = A_list[:, index.squeeze(0), :].sum(dim=0).sum(dim=0).nonzero().squeeze(1)
+
+            for next_tag in next_tag_set:
+                # broadcast the emission score: it is the same regardless of
+                # the previous tag
+                emit_score = feat[next_tag].view(1, -1)
+                # the ith entry of trans_score is the score of transitioning to
+                # next_tag from i
+                trans_score = self.transitions(next_tag, full_road_emb, A_list)
+
+                # The ith entry of next_tag_var is the value for the
+                # edge (i -> next_tag) before we do log-sum-exp
+                next_tag_var = forward_var + trans_score + emit_score
+                # The forward variable for this tag is log-sum-exp of all the
+                # scores.
+                alphas_t[:, next_tag] = log_sum_exp(next_tag_var).view(1)
+                # alphas_t.append(log_sum_exp(next_tag_var).view(1))
+
+            forward_var = alphas_t
+
+        terminal_var = forward_var
+
+        value, _ = terminal_var.topk(self.beam_size, largest=True)
+        # * n/beamsize
+        alpha = log_sum_exp(value) + math.log(
+            self.target_size / self.beam_size)
+        del forward_var, alphas_t
+        return alpha
 
     def _score_sentence_batch(self, emissions, tags, mask, full_road_emb,
                               A_list):
