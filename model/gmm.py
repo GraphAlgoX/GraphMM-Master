@@ -44,10 +44,15 @@ class GMM(nn.Module):
                                hidden_size=4 * loc_dim,
                                atten_flag=atten_flag)
         self.graphfilter = GraphFilter(emb_dim=4 * loc_dim)
-        self.exp_fc_road = MLP([4, 2 * loc_dim, 4 * loc_dim])
+        self.exp_fc_road = nn.Linear(4, 4 * loc_dim)
         self.exp_fc_traj = nn.Linear(2, 4 * loc_dim)
-        self.norm = nn.BatchNorm1d(4)
-        self.norm1 = nn.BatchNorm1d(2)
+        self.norm_road = nn.BatchNorm1d(4)
+        self.norm_traj = nn.BatchNorm1d(2)
+
+    def normalization(self, x):
+        min_val = torch.min(x)
+        max_val = torch.max(x)
+        return (x - min_val) / (max_val - min_val)
 
     def forward(self, grid_traces, tgt_roads, traces_gps, traces_lens,
                 road_lens, gdata, tf_ratio):
@@ -120,11 +125,12 @@ class GMM(nn.Module):
         """
         gain road embedding and grid embedding
         """
-        road_x = self.exp_fc_road(self.norm(gdata.road_x))
+        road_x = self.exp_fc_road(self.norm_road(gdata.road_x))
         full_road_emb = self.road_gcn(road_x, gdata.road_adj)
         # [num_of_grid, 4*loc]
         pure_grid_feat = torch.mm(gdata.map_matrix, full_road_emb)
-        pure_grid_feat[gdata.singleton_grid_mask] = self.exp_fc_road(self.norm(gdata.singleton_grid_location))
+        singleton_x = self.norm_road(gdata.singleton_grid_location)
+        pure_grid_feat[gdata.singleton_grid_mask] = self.exp_fc_road(singleton_x)
         full_grid_emb = torch.zeros(gdata.num_grids + 1, 8 * self.loc_dim).to(self.device)
         full_grid_emb[1:, :] = self.trace_gcn(pure_grid_feat,
                                               gdata.trace_inadj,
@@ -178,7 +184,7 @@ class GMM(nn.Module):
             max_RL = int(max(road_lens))
 
         rnn_input = full_grid_emb[grid_traces]
-        traces_gps = self.norm1(traces_gps.permute(0, 2, 1)).permute(0, 2, 1)
+        traces_gps = self.norm_traj(traces_gps.permute(0, 2, 1)).permute(0, 2, 1)
         traces_gps = self.exp_fc_traj(traces_gps)
         rnn_input = torch.cat((rnn_input, traces_gps), dim=-1)
         encoder_outputs, hiddens = self.seq2seq.encode(rnn_input, trace_lens)
