@@ -113,6 +113,9 @@ class GMM(nn.Module):
         return None, F.softmax(emissions, dim=-1)
 
     def get_emb(self, gdata):
+        """
+        gain road embedding and grid embedding
+        """
         full_road_emb = self.road_gcn(self.norm(gdata.road_x), gdata.road_adj)
         # [num_of_grid, 4*loc]
         pure_grid_feat = torch.mm(gdata.map_matrix, full_road_emb)
@@ -131,6 +134,9 @@ class GMM(nn.Module):
                        easy_filter_cache,
                        first_constraint=False,
                        tmp_grid=None):
+        """
+        hidden similarity computation
+        """
         batchsize = lst_road_id.shape[0]
         constraint = torch.zeros(batchsize, gdata.num_roads).to(self.device)
         if first_constraint:
@@ -155,6 +161,7 @@ class GMM(nn.Module):
                   road_lens, tf_ratio, full_road_emb, full_grid_emb,
                   easy_filter_cache, gdata):
         """
+        decode max_trace_lens times for tgt roads
         grid_traces: (batch_size, max_trace_lens)
         tgt_roads: (batch_size, max_road_lens)
         return (batch_size, max_road_lens, num_roads)
