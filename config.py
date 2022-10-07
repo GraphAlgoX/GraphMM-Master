@@ -16,7 +16,7 @@ def get_params():
     parser.add_argument("--dev_id", type=int, default=1)
     parser.add_argument("--use_gcn", type=int, default=1)
     parser.add_argument("--atten_flag", type=int, default=1)
-    parser.add_argument("--tf_ratio", type=float, default=0.5)
+    parser.add_argument("--tf_ratio", type=float, default=0.)
     args, _ = parser.parse_known_args()
 
     return args

@@ -48,6 +48,7 @@ class GMM(nn.Module):
         self.exp_fc_traj = nn.Linear(2, 4 * loc_dim)
         self.norm_road = nn.BatchNorm1d(4)
         self.norm_traj = nn.BatchNorm1d(2)
+        self.classification = nn.Linear(4 * loc_dim, target_size)
 
     def normalization(self, x):
         min_val = torch.min(x)
@@ -163,8 +164,9 @@ class GMM(nn.Module):
         else:
             constraint = easy_filter_cache[lst_road_id.squeeze(1)]  # [B, N]
         # h_iH_R \odot f(A_R)
-        prob = (rnn_out @ full_road_emb.detach().T).squeeze(0)
+        # prob = (rnn_out @ full_road_emb.detach().T).squeeze(0) * constraint
         # prob = mask_log_softmax(prob, constraint, log_flag=False)
+        prob = self.classification(rnn_out)
 
         return prob
 
