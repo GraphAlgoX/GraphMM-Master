@@ -1,0 +1,11 @@
+experimentName: GMM_Attention
+searchSpaceFile: search_space.json
+trialCommand: python3 train_gmm.py
+experimentWorkingDirectory: nni-experiments
+trialConcurrency: 1
+tuner:
+  name: TPE
+  classArgs:
+    optimize_mode: maximize
+trainingService:
+  platform: local
