@@ -13,14 +13,6 @@ class GraphFilter(nn.Module):
         self.emb_dim = emb_dim
         # used for compute loss
         self.w = nn.Parameter(torch.randn(1, emb_dim * 2))
-        # used for make constraint
-        self.r = nn.Parameter(torch.ones(1, 1))
-
-    def init_easy_filter_cache(self, A_list):
-        r = F.relu(self.r)
-        # [N, N]
-        easy_filter_cache = A_list.squeeze(0) * r
-        return easy_filter_cache
 
     def binary_loss(self, id1, id2, emb1, emb2, A_list):  # eq 15, 16
         concat_emb = torch.cat([emb1, emb2], 0).view(-1, 1)

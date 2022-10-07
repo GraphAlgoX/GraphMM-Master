@@ -53,7 +53,6 @@ class GMM(nn.Module):
         traces_lens, road_lens: (batch_size, )
         """
         full_road_emb, full_grid_emb = self.get_emb(gdata)
-        easy_filter_cache = self.graphfilter.init_easy_filter_cache(gdata.A_list)
         # B, RL = tgt_roads.shape
         # B, TL = grid_traces.shape
         emissions = self.get_probs(grid_traces=grid_traces,
@@ -64,7 +63,7 @@ class GMM(nn.Module):
                                    tf_ratio=tf_ratio,
                                    full_grid_emb=full_grid_emb,
                                    gdata=gdata,
-                                   easy_filter_cache=easy_filter_cache,
+                                   easy_filter_cache=gdata.A_list.squeeze(0),
                                    full_road_emb=full_road_emb)
         # B, L, N
         # full_loss = 0
@@ -91,7 +90,6 @@ class GMM(nn.Module):
         traces_lens, road_lens: (batch_size, )
         """
         full_road_emb, full_grid_emb = self.get_emb(gdata)
-        easy_filter_cache = self.graphfilter.init_easy_filter_cache(gdata.A_list)
 
         emissions = self.get_probs(grid_traces=grid_traces,
                                    tgt_roads=None,
@@ -101,7 +99,7 @@ class GMM(nn.Module):
                                    tf_ratio=tf_ratio,
                                    full_grid_emb=full_grid_emb,
                                    gdata=gdata,
-                                   easy_filter_cache=easy_filter_cache,
+                                   easy_filter_cache=gdata.A_list.squeeze(0),
                                    full_road_emb=full_road_emb)
         # max_RL = max(road_lens)
         # B = len(road_lens)
