@@ -1,4 +1,4 @@
-from model.crf import CRF
+from model.gmm import GMM
 from config import get_params
 from graph_data import GraphData
 import torch
@@ -16,13 +16,12 @@ gdata = GraphData(parent_path=args['parent_path'],
                     layer=args['layer'],
                     device=device)
 
-model = CRF(loc_dim=args['loc_dim'],
+model = GMM(loc_dim=args['loc_dim'],
+            target_size=gdata.num_roads,
             beam_size=args['beam_size'],
             device=device,
-            num_roads=gdata.num_roads,
-            use_gcn=args['use_gcn'],
             atten_flag=args['atten_flag'])
-save_path = "ckpt/bz256_lr0.001_ep30_locd32_gcn1_att1_best_gclip.pt"
+save_path = "ckpt1/bz256_lr0.001_ep200_locd32_gcn1_att1_best_gclip.pt"
 model.load_state_dict(torch.load(save_path))
 model = model.to(device)
 
@@ -31,4 +30,4 @@ pca = PCA(n_components=2)
 pca.fit(full_road_emb)
 X_new = pca.transform(full_road_emb)
 plt.scatter(X_new[:, 0], X_new[:, 1], marker='o')
-plt.savefig("images/gcn_cons_loc32_bofore.png")
+plt.savefig("images/gcn_cons_loc32_bgcn.png")

@@ -70,9 +70,13 @@ class GMM(nn.Module):
         #     nn.Linear(6 * loc_dim, 4 * loc_dim)
         # )
         self.road_mlp = nn.Sequential(
-            nn.Linear(4 * loc_dim, target_size),
+            nn.Linear(4 * loc_dim, 8 * loc_dim),
+            nn.BatchNorm1d(8 * loc_dim),
             nn.ReLU(),
-            nn.Linear(target_size, 4 * loc_dim)
+            nn.Linear(8 * loc_dim, 8 * loc_dim),
+            nn.BatchNorm1d(8 * loc_dim),
+            nn.ReLU(),
+            nn.Linear(8 * loc_dim, 4 * loc_dim)
         )
         # self.classification = nn.Linear(4 * loc_dim, target_size)
 
