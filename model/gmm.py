@@ -7,7 +7,7 @@ from model.TraceGCN import TraceGCN
 from model.seq2seq import Seq2Seq
 from model.graphfilter import GraphFilter
 import torch.nn.functional as F
-from torch_geometric.nn import MLP
+from model.feature_encoder import FeatureEncoder
 
 
 def argmax(vec):
@@ -54,6 +54,7 @@ class GMM(nn.Module):
                                hidden_size=4 * loc_dim,
                                atten_flag=atten_flag)
         self.graphfilter = GraphFilter(emb_dim=4 * loc_dim)
+        self.feat_encoder = FeatureEncoder(4, loc_dim)
         self.exp_fc_road = nn.Linear(4, 4 * loc_dim)
         self.exp_fc_traj = nn.Linear(2, 4 * loc_dim)
         self.norm_road = nn.BatchNorm1d(4)
@@ -146,13 +147,15 @@ class GMM(nn.Module):
         """
         gain road embedding and grid embedding
         """
-        road_x = self.exp_fc_road(self.norm_road(gdata.road_x))
+        road_x = self.feat_encoder(self.norm_road(gdata.road_x))
+        # road_x = self.exp_fc_road(self.norm_road(gdata.road_x))
         full_road_emb = self.road_gcn(road_x, gdata.road_adj)
         full_road_emb = self.road_mlp(full_road_emb)
         # [num_of_grid, 4*loc]
         pure_grid_feat = torch.mm(gdata.map_matrix, full_road_emb)
         singleton_x = self.norm_road(gdata.singleton_grid_location)
-        pure_grid_feat[gdata.singleton_grid_mask] = self.road_mlp(self.exp_fc_road(singleton_x))
+        # pure_grid_feat[gdata.singleton_grid_mask] = self.exp_fc_road(singleton_x)
+        pure_grid_feat[gdata.singleton_grid_mask] = self.feat_encoder(singleton_x)
         full_grid_emb = torch.zeros(gdata.num_grids + 1, 8 * self.loc_dim).to(self.device)
         full_grid_emb[1:, :] = self.trace_gcn(pure_grid_feat,
                                               gdata.trace_inadj,
