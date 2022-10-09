@@ -25,9 +25,9 @@ class UnDiGCN(torch.nn.Module):
 
 
 class RoadGCN(torch.nn.Module):
-    def __init__(self, loc_dim):
+    def __init__(self, emb_dim):
         super(RoadGCN, self).__init__()
-        self.emb_dim = 4 * loc_dim
+        self.emb_dim = emb_dim
         self.gcn = UnDiGCN(self.emb_dim)
 
     def forward(self, x_feat, adj_t):

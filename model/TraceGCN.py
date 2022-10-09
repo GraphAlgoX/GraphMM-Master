@@ -26,9 +26,9 @@ class DiGCN(torch.nn.Module):
 
 
 class TraceGCN(torch.nn.Module):
-    def __init__(self, loc_dim):
+    def __init__(self, emb_dim):
         super(TraceGCN, self).__init__()
-        self.emb_dim = 4*loc_dim
+        self.emb_dim = emb_dim
         self.gcn1 = DiGCN(self.emb_dim)
         self.gcn2 = DiGCN(self.emb_dim)
 

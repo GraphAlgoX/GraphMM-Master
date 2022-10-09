@@ -84,7 +84,7 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
 
 
 def main(args):
-    save_path = "ckpt1/bz{}_lr{}_ep{}_locd{}_gcn{}_att{}_best_gclip.pt".format(
+    save_path = "ckpt/bz{}_lr{}_ep{}_locd{}_gcn{}_att{}_best_gclip.pt".format(
         args['batch_size'], args['lr'], args['epochs'], args['loc_dim'], args['use_gcn'], args['atten_flag'])
     root_path = "../data_for_GMM-Master/"
     trainset = MyDataset(root_path, "train")

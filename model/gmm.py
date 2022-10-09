@@ -48,15 +48,15 @@ class GMM(nn.Module):
         self.target_size = target_size
         self.beam_size = beam_size
         self.atten_flag = atten_flag
-        self.road_gcn = RoadGCN(loc_dim)
-        self.trace_gcn = TraceGCN(loc_dim)
+        self.road_gcn = RoadGCN(4 * loc_dim)
+        self.trace_gcn = TraceGCN(4 * loc_dim)
         self.seq2seq = Seq2Seq(input_size=8 * loc_dim,
                                hidden_size=4 * loc_dim,
                                atten_flag=atten_flag)
         self.graphfilter = GraphFilter(emb_dim=4 * loc_dim)
         self.feat_encoder = FeatureEncoder(4, loc_dim)
-        self.exp_fc_road = nn.Linear(4, 4 * loc_dim)
-        self.exp_fc_traj = nn.Linear(2, 4 * loc_dim)
+        # self.exp_fc_road = nn.Linear(4, 4 * loc_dim)
+        # self.exp_fc_traj = nn.Linear(2, 4 * loc_dim)
         self.norm_road = nn.BatchNorm1d(4)
         self.norm_traj = nn.BatchNorm1d(2)
         # self.proj_out = nn.Sequential(
