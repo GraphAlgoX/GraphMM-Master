@@ -25,6 +25,16 @@ def log_sum_exp(vec):
         torch.log(torch.sum(torch.exp(vec - max_score_broadcast), dim=1))
 
 
+def min_max_norm(x):
+    min_val = torch.min(x)
+    max_val = torch.max(x)
+    return (x - min_val) / (max_val - min_val)
+
+
+def l2_norm(x):
+    return x / torch.sqrt(torch.sum(x ** 2, axis=-1, keepdims=True))
+
+
 class GMM(nn.Module):
     def __init__(self,
                  loc_dim,
@@ -40,7 +50,7 @@ class GMM(nn.Module):
         self.atten_flag = atten_flag
         self.road_gcn = RoadGCN(loc_dim)
         self.trace_gcn = TraceGCN(loc_dim)
-        self.seq2seq = Seq2Seq(input_size=12 * loc_dim,
+        self.seq2seq = Seq2Seq(input_size=8 * loc_dim,
                                hidden_size=4 * loc_dim,
                                atten_flag=atten_flag)
         self.graphfilter = GraphFilter(emb_dim=4 * loc_dim)
@@ -48,12 +58,22 @@ class GMM(nn.Module):
         self.exp_fc_traj = nn.Linear(2, 4 * loc_dim)
         self.norm_road = nn.BatchNorm1d(4)
         self.norm_traj = nn.BatchNorm1d(2)
-        self.classification = nn.Linear(4 * loc_dim, target_size)
-
-    def normalization(self, x):
-        min_val = torch.min(x)
-        max_val = torch.max(x)
-        return (x - min_val) / (max_val - min_val)
+        # self.proj_out = nn.Sequential(
+        #     nn.Linear(4 * loc_dim, 6 * loc_dim),
+        #     nn.ReLU(),
+        #     nn.Linear(6 * loc_dim, 4 * loc_dim)
+        # )
+        # self.proj_road = nn.Sequential(
+        #     nn.Linear(4 * loc_dim, 6 * loc_dim),
+        #     nn.ReLU(),
+        #     nn.Linear(6 * loc_dim, 4 * loc_dim)
+        # )
+        self.road_mlp = nn.Sequential(
+            nn.Linear(4 * loc_dim, target_size),
+            nn.ReLU(),
+            nn.Linear(target_size, 4 * loc_dim)
+        )
+        # self.classification = nn.Linear(4 * loc_dim, target_size)
 
     def forward(self, grid_traces, tgt_roads, traces_gps, traces_lens,
                 road_lens, gdata, tf_ratio):
@@ -128,10 +148,11 @@ class GMM(nn.Module):
         """
         road_x = self.exp_fc_road(self.norm_road(gdata.road_x))
         full_road_emb = self.road_gcn(road_x, gdata.road_adj)
+        full_road_emb = self.road_mlp(full_road_emb)
         # [num_of_grid, 4*loc]
         pure_grid_feat = torch.mm(gdata.map_matrix, full_road_emb)
         singleton_x = self.norm_road(gdata.singleton_grid_location)
-        pure_grid_feat[gdata.singleton_grid_mask] = self.exp_fc_road(singleton_x)
+        pure_grid_feat[gdata.singleton_grid_mask] = self.road_mlp(self.exp_fc_road(singleton_x))
         full_grid_emb = torch.zeros(gdata.num_grids + 1, 8 * self.loc_dim).to(self.device)
         full_grid_emb[1:, :] = self.trace_gcn(pure_grid_feat,
                                               gdata.trace_inadj,
@@ -149,24 +170,25 @@ class GMM(nn.Module):
         """
         hidden similarity computation
         """
-        batchsize = lst_road_id.shape[0]
-        constraint = torch.zeros(batchsize, gdata.num_roads).to(self.device)
-        if first_constraint:
-            tmp = torch.zeros(batchsize, gdata.num_grids).to(self.device)
-            for idx in range(batchsize):
-                gridx, gridy = gdata.traceid2grid_dict[int(tmp_grid[idx]) - 1]
-                for i in range(gridx - 3, gridx + 4):
-                    for j in range(gridy - 3, gridy + 4):
-                        if gdata.grid2traceid_dict.get((i, j)) is not None:
-                            tmp[idx, gdata.grid2traceid_dict[(i, j)]] = \
-                                1 / (abs(i - gridx) + abs(j - gridy) + 1)
-            constraint = tmp @ gdata.map_matrix
-        else:
-            constraint = easy_filter_cache[lst_road_id.squeeze(1)]  # [B, N]
+        # batchsize = lst_road_id.shape[0]
+        # constraint = torch.zeros(batchsize, gdata.num_roads).to(self.device)
+        # if first_constraint:
+        #     tmp = torch.zeros(batchsize, gdata.num_grids).to(self.device)
+        #     for idx in range(batchsize):
+        #         gridx, gridy = gdata.traceid2grid_dict[int(tmp_grid[idx]) - 1]
+        #         for i in range(gridx - 3, gridx + 4):
+        #             for j in range(gridy - 3, gridy + 4):
+        #                 if gdata.grid2traceid_dict.get((i, j)) is not None:
+        #                     tmp[idx, gdata.grid2traceid_dict[(i, j)]] = \
+        #                         1 / (abs(i - gridx) + abs(j - gridy) + 1)
+        #     constraint = tmp @ gdata.map_matrix
+        # else:
+        #     constraint = easy_filter_cache[lst_road_id.squeeze(1)]  # [B, N]
         # h_iH_R \odot f(A_R)
-        # prob = (rnn_out @ full_road_emb.detach().T).squeeze(0) * constraint
+        prob = (rnn_out @ full_road_emb.detach().T).squeeze(0)
         # prob = mask_log_softmax(prob, constraint, log_flag=False)
-        prob = self.classification(rnn_out)
+        # prob = self.classification(rnn_out)
+        # prob = (l2_norm(rnn_out) @ l2_norm(full_road_emb.detach()).T).squeeze(0)
 
         return prob
 
@@ -186,9 +208,9 @@ class GMM(nn.Module):
             max_RL = int(max(road_lens))
 
         rnn_input = full_grid_emb[grid_traces]
-        traces_gps = self.norm_traj(traces_gps.permute(0, 2, 1)).permute(0, 2, 1)
-        traces_gps = self.exp_fc_traj(traces_gps)
-        rnn_input = torch.cat((rnn_input, traces_gps), dim=-1)
+        # traces_gps = self.norm_traj(traces_gps.permute(0, 2, 1)).permute(0, 2, 1)
+        # traces_gps = self.exp_fc_traj(traces_gps)
+        # rnn_input = torch.cat((rnn_input, traces_gps), dim=-1)
         encoder_outputs, hiddens = self.seq2seq.encode(rnn_input, trace_lens)
         # start decode
         probs = torch.zeros(B, max_RL, gdata.num_roads).to(self.device)
@@ -335,12 +357,12 @@ class GMM(nn.Module):
             next_tag_set = A_list[:, index.squeeze(0), :].sum(dim=0).sum(
                 dim=0).nonzero().squeeze(1)
 
-            bptrs_t = torch.zeros(self.tagset_size,
+            bptrs_t = torch.zeros(self.target_size,
                                   dtype=torch.long).to(self.device)
 
             # bptrs_t = []  # holds the backpointers for this step
             # viterbivars_t = []  # holds the viterbi variables for this step
-            viterbivars_t = (torch.ones(1, self.tagset_size) *
+            viterbivars_t = (torch.ones(1, self.target_size) *
                              float('-inf')).to(self.device)
             for next_tag in next_tag_set:
                 # next_tag_var[i] holds the viterbi variable for tag i at the

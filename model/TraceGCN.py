@@ -1,21 +1,25 @@
 
 import torch
 import torch.nn.functional as F
+import torch.nn as nn
 from torch_geometric.nn import GCNConv
 
 
 class DiGCN(torch.nn.Module):
     def __init__(self, embed_dim, depth=2):
         super(DiGCN, self).__init__()
-        self.convs = torch.nn.ModuleList()
+        self.convs = nn.ModuleList()
+        self.bns = nn.ModuleList()
         self.depth = depth
         for _ in range(self.depth):
             self.convs.append(
                 GCNConv(embed_dim, embed_dim, normalize=False, add_self_loops=False))
+            self.bns.append(nn.BatchNorm1d(embed_dim))
 
     def forward(self, x, adj_t):
         for idx in range(self.depth):
             x = self.convs[idx](x, adj_t)
+            x = self.bns[idx](x)
             if idx != self.depth - 1:
                 x = F.relu(x)
         return x

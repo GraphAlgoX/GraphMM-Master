@@ -45,7 +45,7 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, tf_ratio):
             print(f"Iteration {count}: train_loss {loss.item()}")
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
-        # nn.utils.clip_grad_norm_(model.parameters(), 1.)
+        nn.utils.clip_grad_norm_(model.parameters(), 1.)
         optimizer.step()
     return train_l_sum / count
 
@@ -84,7 +84,7 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
 
 
 def main(args):
-    save_path = "ckpt/bz{}_lr{}_ep{}_locd{}_gcn{}_att{}_best_gclip.pt".format(
+    save_path = "ckpt1/bz{}_lr{}_ep{}_locd{}_gcn{}_att{}_best_gclip.pt".format(
         args['batch_size'], args['lr'], args['epochs'], args['loc_dim'], args['use_gcn'], args['atten_flag'])
     root_path = "../data_for_GMM-Master/"
     trainset = MyDataset(root_path, "train")
@@ -142,6 +142,8 @@ def main(args):
 if __name__ == "__main__":
     try:
         tuner_params = nni.get_next_parameter()
+        if tuner_params and tuner_params['tf_ratio'] == 0:
+            tuner_params['tf_ratio'] = 0.0
         params = vars(merge_parameter(get_params(), tuner_params))
         print(params)
         main(params)
