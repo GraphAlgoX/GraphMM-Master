@@ -6,7 +6,7 @@ from nni.utils import merge_parameter
 from model.gmm import GMM
 from utils_gq.data_loader import MyDataset, padding
 from torch.utils.data import DataLoader
-from graph_data import GraphData
+from graph_data_gps import GraphData
 from metrics_calculate import cal_id_acc
 from tqdm import tqdm
 import torch.nn as nn

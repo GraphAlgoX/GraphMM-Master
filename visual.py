@@ -1,6 +1,6 @@
 from model.gmm import GMM
 from config import get_params
-from graph_data import GraphData
+from graph_data_gps import GraphData
 import torch
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt

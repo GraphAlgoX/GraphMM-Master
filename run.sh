@@ -1,2 +1,1 @@
-export CUDA_VISIBLE_DEVICES=1
-python train_gmm.py --batch_size 2
+python -u train_gmm.py > grid_fc_nogcn_fc2_multiply.txt
