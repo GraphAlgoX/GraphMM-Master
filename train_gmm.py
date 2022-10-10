@@ -134,6 +134,8 @@ def main(args):
         nni.report_intermediate_result(val_avg_acc)
 
     model.load_state_dict(torch.load(save_path))
+    train_avg_acc, _, _ = evaluate(model, train_iter, device, gdata, 0.)
+    print(f"trainset: acc({train_avg_acc})")
     test_avg_acc, test_avg_r, test_avg_p = evaluate(model, test_iter, device, gdata, 0.)
     nni.report_final_result(test_avg_acc)
     print(f"testset: acc({test_avg_acc}) recall({test_avg_r}) precision({test_avg_p})")

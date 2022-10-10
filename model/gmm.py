@@ -3,6 +3,7 @@ import torch
 import random
 import math
 from model.RoadGCN import RoadGCN
+from model.RoadGIN import RoadGIN
 from model.TraceGCN import TraceGCN
 from model.seq2seq import Seq2Seq
 from model.graphfilter import GraphFilter
@@ -48,7 +49,8 @@ class GMM(nn.Module):
         self.target_size = target_size
         self.beam_size = beam_size
         self.atten_flag = atten_flag
-        self.road_gcn = RoadGCN(4 * loc_dim)
+        # self.road_gcn = RoadGCN(4 * loc_dim)
+        self.road_gin = RoadGIN(4 * loc_dim)
         self.trace_gcn = TraceGCN(4 * loc_dim)
         self.seq2seq = Seq2Seq(input_size=8 * loc_dim,
                                hidden_size=4 * loc_dim,
@@ -69,15 +71,15 @@ class GMM(nn.Module):
         #     nn.ReLU(),
         #     nn.Linear(6 * loc_dim, 4 * loc_dim)
         # )
-        self.road_mlp = nn.Sequential(
-            nn.Linear(4 * loc_dim, 8 * loc_dim),
-            nn.BatchNorm1d(8 * loc_dim),
-            nn.ReLU(),
-            nn.Linear(8 * loc_dim, 8 * loc_dim),
-            nn.BatchNorm1d(8 * loc_dim),
-            nn.ReLU(),
-            nn.Linear(8 * loc_dim, 4 * loc_dim)
-        )
+        # self.road_mlp = nn.Sequential(
+        #     nn.Linear(4 * loc_dim, 8 * loc_dim),
+        #     nn.BatchNorm1d(8 * loc_dim),
+        #     nn.ReLU(),
+        #     nn.Linear(8 * loc_dim, 8 * loc_dim),
+        #     nn.BatchNorm1d(8 * loc_dim),
+        #     nn.ReLU(),
+        #     nn.Linear(8 * loc_dim, 4 * loc_dim)
+        # )
         # self.classification = nn.Linear(4 * loc_dim, target_size)
 
     def forward(self, grid_traces, tgt_roads, traces_gps, traces_lens,
@@ -153,8 +155,9 @@ class GMM(nn.Module):
         """
         road_x = self.feat_encoder(self.norm_road(gdata.road_x))
         # road_x = self.exp_fc_road(self.norm_road(gdata.road_x))
-        full_road_emb = self.road_gcn(road_x, gdata.road_adj)
-        full_road_emb = self.road_mlp(full_road_emb)
+        # full_road_emb = self.road_gcn(road_x, gdata.road_adj)
+        full_road_emb = self.road_gin(road_x, gdata.road_adj)
+        # full_road_emb1 = self.road_mlp(full_road_emb.detach())
         # [num_of_grid, 4*loc]
         pure_grid_feat = torch.mm(gdata.map_matrix, full_road_emb)
         singleton_x = self.norm_road(gdata.singleton_grid_location)
