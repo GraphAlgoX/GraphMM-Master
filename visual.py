@@ -21,7 +21,7 @@ model = GMM(loc_dim=args['loc_dim'],
             beam_size=args['beam_size'],
             device=device,
             atten_flag=args['atten_flag'])
-save_path = "ckpt/bz256_lr0.0005_ep200_locd32_gcn1_att1_best_gclip.pt"
+save_path = "ckpt/best.pt"
 model.load_state_dict(torch.load(save_path))
 model = model.to(device)
 
@@ -30,4 +30,4 @@ pca = PCA(n_components=2)
 pca.fit(full_road_emb)
 X_new = pca.transform(full_road_emb)
 plt.scatter(X_new[:, 0], X_new[:, 1], marker='o')
-plt.savefig("images/gcn_org.png")
+plt.savefig("images/gcn_fe_before.png")
