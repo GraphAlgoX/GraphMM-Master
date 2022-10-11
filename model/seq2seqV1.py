@@ -50,7 +50,7 @@ class Seq2Seq(nn.Module):
             self.attn = Attention(enc_hid_dim=hidden_size * self.D,
                                   dec_hid_dim=hidden_size)
             dec_input_dim += hidden_size
-        # self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.5)
         self.decoder = nn.GRU(input_size=dec_input_dim,
                               hidden_size=hidden_size,
                               batch_first=True)
@@ -75,7 +75,7 @@ class Seq2Seq(nn.Module):
         hidden: (1, batch_size, hidden_size)
         encoder_outputs: (batch_size, src_len, num_directions * hidden_size)
         """
-        # src = self.dropout(src)
+        src = self.dropout(src)
         if self.atten_flag:
             a = self.attn(hidden, encoder_outputs, attn_mask)
             # (batch size, 1, src len)
