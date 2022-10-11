@@ -4,12 +4,10 @@ import torch.nn.functional as F
 
 
 class Attention(nn.Module):
-    def __init__(self, hid_dim):
+    def __init__(self, enc_hid_dim, dec_hid_dim):
         super().__init__()
-        self.hid_dim = hid_dim
-
-        self.attn = nn.Linear(self.hid_dim * 3, self.hid_dim)
-        self.v = nn.Linear(self.hid_dim, 1, bias=False)
+        self.attn = nn.Linear(enc_hid_dim + dec_hid_dim, dec_hid_dim)
+        self.v = nn.Linear(dec_hid_dim, 1, bias=False)
 
     def forward(self, hidden, encoder_outputs, attn_mask):
         """
@@ -33,7 +31,11 @@ class Attention(nn.Module):
 
 
 class Seq2Seq(nn.Module):
-    def __init__(self, input_size, hidden_size, atten_flag=True, bi=True) -> None:
+    def __init__(self,
+                 input_size,
+                 hidden_size,
+                 atten_flag=True,
+                 bi=True) -> None:
         super(Seq2Seq, self).__init__()
         self.hidden_size = hidden_size
         self.atten_flag = atten_flag
@@ -45,9 +47,10 @@ class Seq2Seq(nn.Module):
                               bidirectional=self.bi)
         dec_input_dim = hidden_size * self.D
         if self.atten_flag:
-            self.attn = Attention(hid_dim=hidden_size)
+            self.attn = Attention(enc_hid_dim=hidden_size * self.D,
+                                  dec_hid_dim=hidden_size)
             dec_input_dim += hidden_size
-        self.dropout = nn.Dropout(0.5)
+        # self.dropout = nn.Dropout(0.5)
         self.decoder = nn.GRU(input_size=dec_input_dim,
                               hidden_size=hidden_size,
                               batch_first=True)
@@ -72,7 +75,7 @@ class Seq2Seq(nn.Module):
         hidden: (1, batch_size, hidden_size)
         encoder_outputs: (batch_size, src_len, num_directions * hidden_size)
         """
-        src = self.dropout(src)
+        # src = self.dropout(src)
         if self.atten_flag:
             a = self.attn(hidden, encoder_outputs, attn_mask)
             # (batch size, 1, src len)
