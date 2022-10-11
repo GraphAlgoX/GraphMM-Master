@@ -5,7 +5,7 @@ import math
 from model.RoadGCN import RoadGCN
 from model.RoadGIN import RoadGIN
 from model.TraceGCN import TraceGCN
-from model.seq2seq import Seq2Seq
+from model.seq2seqV1 import Seq2Seq
 from model.graphfilter import GraphFilter
 import torch.nn.functional as F
 from model.feature_encoder import FeatureEncoder

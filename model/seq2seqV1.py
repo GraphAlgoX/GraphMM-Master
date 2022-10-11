@@ -33,16 +33,17 @@ class Attention(nn.Module):
 
 
 class Seq2Seq(nn.Module):
-    def __init__(self, input_size, hidden_size, atten_flag=True) -> None:
+    def __init__(self, input_size, hidden_size, atten_flag=True, bi=True) -> None:
         super(Seq2Seq, self).__init__()
         self.hidden_size = hidden_size
         self.atten_flag = atten_flag
+        self.bi = bi
+        self.D = 2 if self.bi else 1
         self.encoder = nn.GRU(input_size=input_size,
                               hidden_size=hidden_size,
                               batch_first=True,
-                              bidirectional=True)
-        self.fc_hidden = nn.Linear(hidden_size * 2, hidden_size)
-        dec_input_dim = hidden_size * 2
+                              bidirectional=self.bi)
+        dec_input_dim = hidden_size * self.D
         if self.atten_flag:
             self.attn = Attention(hid_dim=hidden_size)
             dec_input_dim += hidden_size
@@ -59,10 +60,11 @@ class Seq2Seq(nn.Module):
         packed_outputs, hiddens = self.encoder(packed_embedded)
         outputs, _ = nn.utils.rnn.pad_packed_sequence(packed_outputs,
                                                       batch_first=True)
-        hiddens = torch.tanh(self.fc_hidden(torch.cat((hiddens[-2, :, :], hiddens[-1, :, :]), dim=1)))
+        if self.bi:
+            hiddens = torch.sum(hiddens, dim=0, keepdims=True)
         # outputs (batch_size, seq_len, hidden_size * 2)
         # hiddens (1, batch_size, hidden_size)
-        return outputs, hiddens.unsqueeze(0)
+        return outputs, hiddens
 
     def decode(self, src, hidden, encoder_outputs, attn_mask):
         """
