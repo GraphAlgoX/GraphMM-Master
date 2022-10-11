@@ -1,6 +1,6 @@
 {
-    "lr":{"_type":"choice", "_value": [0.001]},
+    "lr":{"_type":"choice", "_value": [0.0005]},
     "use_gcn":{"_type":"choice", "_value": [1]},
     "loc_dim":{"_type":"choice", "_value": [32]},
-    "tf_ratio":{"_type":"choice", "_value": [0.5]}
+    "tf_ratio":{"_type":"choice", "_value": [0.0, 0.5]}
 }
