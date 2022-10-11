@@ -22,9 +22,7 @@ class RoadGIN(nn.Module):
         layer_outputs = []
         for i in range(self.depth):
             x = self.gins[i](x, adj_t.to(x.device))
-            x = self.batch_norms[i](x)
-            if i != self.depth - 1:
-                x = F.relu(x)
+            x = F.relu(self.batch_norms[i](x))
             layer_outputs.append(x)
         x = torch.stack(layer_outputs, dim=0)
         x = torch.max(x, dim=0)[0]
