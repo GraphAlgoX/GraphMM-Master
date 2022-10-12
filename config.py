@@ -8,7 +8,7 @@ def get_params():
     parser.add_argument("--lr", type=float, default=0.0005)
     parser.add_argument("--parent_path",
                         type=str,
-                        default="../data_for_GMM-Master/")
+                        default="/data/GeQian/g2s_2/data_for_GMM-Master/")
     parser.add_argument("--loc_dim", type=int, default=64)
     parser.add_argument("--layer", type=int, default=4)
     parser.add_argument("--beam_size", type=int, default=5)
