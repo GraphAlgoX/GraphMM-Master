@@ -126,49 +126,49 @@ if __name__ == "__main__":
             for j in i:
                 f.write(j)
 
-    sampleRate = 0.5  # 对于clean data
+    # sampleRate = 0.5  # 对于clean data
 
-    downsampleData, pureData = randomDownSampleBySize(finalLs, sampleRate, threshold)
+    # downsampleData, pureData = randomDownSampleBySize(finalLs, sampleRate, threshold)
 
     
-    print("下采样完毕, 开始进行轨迹长度统计")
+    # print("下采样完毕, 开始进行轨迹长度统计")
 
 
-    traces_ls = []
-    roads_ls = []
-    for downdata, puredata in zip(downsampleData, pureData):
-        traces = []
-        roads = []
-        for i in downdata:
-            if i[0] == '#':
-                continue
-            il = i.split(',')
-            lat = float(il[1])
-            lng = float(il[2])
-            # road_id = int(i[3])
-            traces.append((lat, lng))
-            # roads.append(road_id)
-        for i in puredata:
-            if i[0] == '#':
-                continue
-            roads.append(int(i.split(',')[3]))
-        traces_ls.append(traces)
-        roads_ls.append(roads)
+    # traces_ls = []
+    # roads_ls = []
+    # for downdata, puredata in zip(downsampleData, pureData):
+    #     traces = []
+    #     roads = []
+    #     for i in downdata:
+    #         if i[0] == '#':
+    #             continue
+    #         il = i.split(',')
+    #         lat = float(il[1])
+    #         lng = float(il[2])
+    #         # road_id = int(i[3])
+    #         traces.append((lat, lng))
+    #         # roads.append(road_id)
+    #     for i in puredata:
+    #         if i[0] == '#':
+    #             continue
+    #         roads.append(int(i.split(',')[3]))
+    #     traces_ls.append(traces)
+    #     roads_ls.append(roads)
     
 
-    dataset = MyDataset(traces_ls=traces_ls, roads_ls=roads_ls)
+    # dataset = MyDataset(traces_ls=traces_ls, roads_ls=roads_ls)
 
-    dlens = dataset.length
-    train_lens, val_lens = int(0.7*dlens), int(0.2*dlens)
-    test_lens = dlens - train_lens - val_lens
-    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, 
-        [train_lens, val_lens, test_lens])
+    # dlens = dataset.length
+    # train_lens, val_lens = int(0.7*dlens), int(0.2*dlens)
+    # test_lens = dlens - train_lens - val_lens
+    # train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, 
+    #     [train_lens, val_lens, test_lens])
     
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1, shuffle=True)
-    print('finished ')
-    for trace, road in train_loader:
-        print(f'trace={trace}')
-        print(f'road={road}')
-        break
+    # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1, shuffle=True)
+    # print('finished ')
+    # for trace, road in train_loader:
+    #     print(f'trace={trace}')
+    #     print(f'road={road}')
+    #     break
 
     

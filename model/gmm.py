@@ -56,7 +56,8 @@ class GMM(nn.Module):
                                hidden_size=4 * loc_dim,
                                atten_flag=atten_flag)
         self.graphfilter = GraphFilter(emb_dim=4 * loc_dim)
-        self.feat_fc = nn.Linear(4, 4 * loc_dim)
+        self.feat_fc = nn.Linear(28, 4 * loc_dim) # 3*8 + 4
+        self.trace_feat_fc = nn.Linear(4, 4*loc_dim)
         # self.feat_encoder = FeatureEncoder(4, loc_dim)
         # self.exp_fc_road = nn.Linear(4, 4 * loc_dim)
         # self.exp_fc_traj = nn.Linear(2, 4 * loc_dim)
@@ -81,7 +82,7 @@ class GMM(nn.Module):
         #     nn.ReLU(),
         #     nn.Linear(8 * loc_dim, 4 * loc_dim)
         # )
-        # self.classification = nn.Linear(4 * loc_dim, target_size)
+        self.classification = nn.Linear(4 * loc_dim, target_size)
 
     def forward(self, grid_traces, tgt_roads, traces_gps, traces_lens,
                 road_lens, gdata, tf_ratio):
@@ -155,7 +156,7 @@ class GMM(nn.Module):
         gain road embedding and grid embedding
         """
         # road_x = self.feat_encoder(gdata.road_x)
-        road_x = self.feat_fc(gdata.road_x)
+        road_x = self.feat_fc(F.normalize(gdata.road_x))
         # road_x = self.exp_fc_road(self.norm_road(gdata.road_x))
         # full_road_emb = self.road_gcn(road_x, gdata.road_adj)
         full_road_emb = self.road_gin(road_x, gdata.road_adj)
@@ -164,7 +165,7 @@ class GMM(nn.Module):
         pure_grid_feat = torch.mm(gdata.map_matrix, full_road_emb)
         # pure_grid_feat[gdata.singleton_grid_mask] = self.exp_fc_road(singleton_x)
         # pure_grid_feat[gdata.singleton_grid_mask] = self.feat_encoder(gdata.singleton_grid_location)
-        pure_grid_feat[gdata.singleton_grid_mask] = self.feat_fc(gdata.singleton_grid_location)
+        pure_grid_feat[gdata.singleton_grid_mask] = self.trace_feat_fc(F.normalize(gdata.singleton_grid_location))
         full_grid_emb = torch.zeros(gdata.num_grids + 1, 8 * self.loc_dim).to(self.device)
         full_grid_emb[1:, :] = self.trace_gcn(pure_grid_feat,
                                               gdata.trace_inadj,
@@ -182,6 +183,7 @@ class GMM(nn.Module):
         """
         hidden similarity computation
         """
+        
         # batchsize = lst_road_id.shape[0]
         # constraint = torch.zeros(batchsize, gdata.num_roads).to(self.device)
         # if first_constraint:
@@ -197,6 +199,7 @@ class GMM(nn.Module):
         # else:
         #     constraint = easy_filter_cache[lst_road_id.squeeze(1)]  # [B, N]
         # h_iH_R \odot f(A_R)
+        
         prob = (rnn_out @ full_road_emb.detach().T).squeeze(0)
         # prob = mask_log_softmax(prob, constraint, log_flag=False)
         # prob = self.classification(rnn_out)

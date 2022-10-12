@@ -5,7 +5,8 @@ import networkx as nx
 import json
 import pickle
 
-min_lat, max_lat, min_lng, max_lng = float("inf"), float("-inf"), float("inf"), float("-inf")
+# min_lat, max_lat, min_lng, max_lng = float("inf"), float("-inf"), float("inf"), float("-inf")
+min_lat, max_lat, min_lng, max_lng = 40.0200685, 40.0982601, 116.2628457, 116.3528631
 GRID_SIZE = 50
 
 DEGREES_TO_RADIANS = math.pi / 180
@@ -401,6 +402,7 @@ def rebuildtrace(oldtrace, newtrace, link2idx, parent):
 
 if __name__ == '__main__':
     r = read_road(data_path+'road.txt')
+    # exit(0)
     g = construct_road_graph(r)
 
     lens_threshold = 160
@@ -408,10 +410,12 @@ if __name__ == '__main__':
     sg = SuperGraph(g, degree_threshold, lens_threshold)
     nG, child, parent, link2idx = sg.solve()
     nG_save = save_nG(nG, link2idx)
-    # print(nG.number_of_edges())
-    # print(nG.number_of_nodes())
-    # json.dump(link2idx, open(data_path+'peeling_data/link2idx.json', 'w'))
-    # # link2idx = json.load(open('/data/GeQian/g2s_2/GNNMapMatch_haixu/utils/link2idx.json','r'))
-    # rebuildroad(data_path+'pure_data/newroad.txt', link2idx, nG)
-    # rebuildtrace('/data/GeQian/g2s_2/preprocessed_pure/clean_full_trace.txt', data_path+'pure_data/clean_full_trace_new.txt', link2idx, parent)
-    # rebuildtrace('/data/GeQian/g2s_2/preprocessed_pure/full_trace.txt', data_path+'pure_data/full_trace_new.txt', link2idx, parent)
+    print(nG.number_of_edges())
+    print(nG.number_of_nodes())
+    # exit(0)
+    json.dump(link2idx, open(data_path+'peeling_data/link2idx.json', 'w'))
+    # link2idx = json.load(open('/data/GeQian/g2s_2/GNNMapMatch_haixu/utils/link2idx.json','r'))
+    rebuildroad(data_path+'pure_data/newroad.txt', link2idx, nG)
+    # exit(0)
+    rebuildtrace('/data/GeQian/g2s_2/preprocessed_pure/clean_full_trace.txt', data_path+'pure_data/clean_full_trace_new.txt', link2idx, parent)
+    rebuildtrace('/data/GeQian/g2s_2/preprocessed_pure/full_trace.txt', data_path+'pure_data/full_trace_new.txt', link2idx, parent)

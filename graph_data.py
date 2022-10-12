@@ -12,8 +12,9 @@ class GraphData():
         self.device = device
         data_path = parent_path + 'data/'
         # load trace graph and road graph
-        road_graph = nx.read_gml(data_path + 'road_graph.gml',
-                                 destringizer=int)
+        # road_graph = nx.read_gml(data_path + 'road_graph.gml',
+        #                          destringizer=int)
+        road_graph = pickle.load(open(data_path + 'road_graph.pkl', 'rb'))
         trace_graph = nx.read_gml(data_path + 'trace_graph.gml',
                                   destringizer=int)
         self.num_roads = road_graph.number_of_nodes()
@@ -43,32 +44,31 @@ class GraphData():
             value=trace_outweight,
             sparse_sizes=(self.num_grids, self.num_grids)).to(device)
         # load initial features of road graph
-        # self.road_x = torch.load(road_pt_path + 'x.pt').to(device)
-        road_x = torch.load(road_pt_path + 'x.pt')
-        self.road_x = torch.randn(road_x.shape)
-        for idx in range(road_x.shape[0]):
-            self.road_x[idx][0], self.road_x[idx][1] = \
-                gps2grid(float(road_x[idx][0]), float(road_x[idx][1]))
-            self.road_x[idx][2], self.road_x[idx][3] = \
-                gps2grid(float(road_x[idx][2]), float(road_x[idx][3]))
-        
-        self.road_x = self.road_x.to(device)
+        self.road_x = torch.load(road_pt_path + 'x.pt').to(device)
+        # road_x = torch.load(road_pt_path + 'x.pt')
+        # self.road_x = torch.randn(road_x.shape)
+        # for idx in range(road_x.shape[0]):
+        #     self.road_x[idx][0], self.road_x[idx][1] = \
+        #         gps2grid(float(road_x[idx][0]), float(road_x[idx][1]))
+        #     self.road_x[idx][2], self.road_x[idx][3] = \
+        #         gps2grid(float(road_x[idx][2]), float(road_x[idx][3]))
+        # self.road_x = self.road_x.to(device)
 
         self.singleton_grid_mask = torch.load(
             trace_pt_path + 'singleton_grid_mask.pt').to(device)
-        # self.singleton_grid_location = torch.load(
-        #     trace_pt_path + 'singleton_grid_location.pt').to(device)
-        singleton_grid_location = torch.load(
+        self.singleton_grid_location = torch.load(
             trace_pt_path + 'singleton_grid_location.pt').to(device)
+        # singleton_grid_location = torch.load(
+        #     trace_pt_path + 'singleton_grid_location.pt').to(device)
 
-        self.singleton_grid_location = torch.zeros(singleton_grid_location.shape)
-        for idx in range(singleton_grid_location.shape[0]):
-            self.singleton_grid_location[idx][0], self.singleton_grid_location[idx][1] = \
-                gps2grid(float(singleton_grid_location[idx][0]), float(singleton_grid_location[idx][1]))
-            self.singleton_grid_location[idx][2], self.singleton_grid_location[idx][3] = \
-                gps2grid(float(singleton_grid_location[idx][2]), float(singleton_grid_location[idx][3]))
+        # self.singleton_grid_location = torch.zeros(singleton_grid_location.shape)
+        # for idx in range(singleton_grid_location.shape[0]):
+        #     self.singleton_grid_location[idx][0], self.singleton_grid_location[idx][1] = \
+        #         gps2grid(float(singleton_grid_location[idx][0]), float(singleton_grid_location[idx][1]))
+        #     self.singleton_grid_location[idx][2], self.singleton_grid_location[idx][3] = \
+        #         gps2grid(float(singleton_grid_location[idx][2]), float(singleton_grid_location[idx][3]))
 
-        self.singleton_grid_location = self.singleton_grid_location.to(device)
+        # self.singleton_grid_location = self.singleton_grid_location.to(device)
 
         self.map_matrix = torch.load(trace_pt_path +
                                      'map_matrix.pt').to(device)

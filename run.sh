@@ -1,1 +1,1 @@
-python -u train_gmm.py > grid_fc_nogcn_fc2_multiply.txt
+python -u train_gmm.py > gin_fully_connect_prob.txt

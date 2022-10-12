@@ -1,10 +1,8 @@
 import re
 import networkx as nx
 import torch
-import pickle
 
-# min_lat, max_lat, min_lng, max_lng = float("inf"), float("-inf"), float("inf"), float("-inf")
-min_lat, max_lat, min_lng, max_lng = 40.0200685, 40.0982601, 116.2628457, 116.3528631
+min_lat, max_lat, min_lng, max_lng = float("inf"), float("-inf"), float("inf"), float("-inf")
 GRID_SIZE = 50
 
 
@@ -59,14 +57,16 @@ def construct_road_graph(roads: dict):
     now_id = 0
     for road in roads.values():
         link_id, s_node_id, e_node_id, link_dir, speed, vertex_count, points, neighbors = road
-
+        if link_id == '3625':
+            print('stop!!!')
         if int(link_dir) == 3:
             print(road)
         p1 = points[0]
         p2 = points[-1]
         grid_x1, grid_y1 = gps2grid(p1[1], p1[0])
         grid_x2, grid_y2 = gps2grid(p2[1], p2[0])
-
+        if (grid_x2-grid_x1)*(grid_y2-grid_y1) > 60:
+            print('stop')
         link_id_2_new_id_dict[link_id] = now_id
         link_dict[link_id] = [now_id, s_node_id, e_node_id, link_dir, speed, vertex_count, points, neighbors]
         graph.add_node(now_id, x1=grid_x1, y1=grid_y1, x2=grid_x2, y2=grid_y2, lat1=p1[1], lng1=p1[0], lat2=p2[1],
@@ -112,88 +112,28 @@ def cal_kth_avg_neighbor_nums(graph, k):
     print(f'k={k}, avg neighbor nums: {total_num / graph.number_of_nodes()}')
 
 
-def build_x_edge_index(G):
-    x_feat = []
-    # G = nx.read_gml(path)
-    num = G.number_of_nodes()
-    
-    for i in range(num):
-        tmp_feat = []
-        self_grid = []
-        self_feat = dict(G.nodes[i]['self_feat'])
-        self_grid.append(gps2grid(self_feat['lat1'], self_feat['lng1']))
-        self_grid.append(gps2grid(self_feat['lat2'], self_feat['lng2']))
-        self_lat_lng = []
-        self_lat_lng += [(self_feat['lat1'], self_feat['lng1']), (self_feat['lat2'], self_feat['lng2'])]
-        child_feats = list(G.nodes[i]['child_feat'])
-        for k in child_feats:
-            k = dict(k)
-            self_grid.append(gps2grid(k['lat1'],k['lng1']))
-            self_grid.append(gps2grid(k['lat2'],k['lng2']))
-            self_lat_lng += [(k['lat1'],k['lng1']), (k['lat2'],k['lng2'])]
-
-        min_x, min_y = self_grid[0]
-        max_x, max_y = self_grid[0]
-
-        min_lat, min_lng = self_lat_lng[0]
-        max_lat, max_lng = self_lat_lng[0]
-
-        for j in self_grid[1:]:
-            min_x = min(min_x, j[0])
-            max_x = max(max_x, j[0])
-
-            min_y = min(min_y, j[1])
-            max_y = max(max_y, j[1])
-        
-        for j in self_lat_lng[1:]:
-            min_lat = min(min_lat, j[0])
-            max_lat = max(max_lat, j[0])
-
-            min_lng = min(min_lng, j[1])
-            max_lng = max(max_lng, j[1])
-
-        
-
-        xy_ls = []
-        xy_ls += [(min_x, min_y), (max_x, max_y), ((min_x+max_x)//2, min_y), ((min_x+max_x)//2, max_y)]
-        xy_ls += [(max_x, min_y), (min_x, max_y), (min_x, (min_y+max_y)//2), (max_x, (min_y+max_y)//2)]
-
-        for xy in xy_ls:
-            x,y = xy
-            min_dis = 1000
-            for self_xy in self_grid:
-                sx, sy = self_xy
-                min_dis = min(min_dis, abs(sx-x)+abs(sy-y))
-
-            tmp_feat += [x,y,min_dis]
-        
-        tmp_feat += [min_lat, min_lng, max_lat, max_lng]
-        G.nodes[i]['x1'], G.nodes[i]['x2'], G.nodes[i]['y1'], G.nodes[i]['y2'] = min_x, max_x, min_y, max_y
-        # for xy in xy_ls:
-        #     for i in 
-        x_feat.append(tmp_feat)
+def build_x_edge_index(path):
+    x = []
+    G = nx.read_gml(path)
+    for i in G.nodes():
+        x.append([G.nodes[i]['lat1'], G.nodes[i]['lng1'], G.nodes[i]['lat2'], G.nodes[i]['lng2']])
 
     edge_index = [[], []]
     for i in G.edges():
         edge_index[0].append(int(i[0]))
         edge_index[1].append(int(i[1]))
-    # print(G)
+    print(G)
 
     edge_index = torch.tensor(edge_index)
-    x = torch.tensor(x_feat)
-    return x, edge_index, G
+    x = torch.tensor(x)
+    return x, edge_index
 
 
 if __name__ == '__main__':
     data_path = '/data/GeQian/g2s_2/data_for_GMM-Master/data/'
-    g = pickle.load(open(data_path+'peeling_data/newnG.pkl','rb'))
-    # r = read_road(data_path+'pure_data/newroad.txt')
-    # ng = construct_road_graph(r)
-    # nx.write_gml(ng, data_path+'road_graph.gml')
-    
-    x, edge_index, G = build_x_edge_index(g)
-    pickle.dump(G, open(data_path+'road_graph.pkl', 'wb'))
-    # nx.write_gml(G, data_path+'road_graph.gml')
-    # x, edge_index = build_x_edge_index(path=data_path+'road_graph.gml')
+    r = read_road(data_path+'pure_data/newroad.txt')
+    g = construct_road_graph(r)
+    nx.write_gml(g, data_path+'road_graph.gml')
+    x, edge_index = build_x_edge_index(path=data_path+'road_graph.gml')
     torch.save(x, data_path+'road_graph_pt/x.pt')
     torch.save(edge_index, data_path+'road_graph_pt/edge_index.pt')

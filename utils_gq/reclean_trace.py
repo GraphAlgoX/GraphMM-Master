@@ -1,10 +1,7 @@
 
 # remove trace only in one grid
 
-MIN_LAT = 90  # 纬度
-MAX_LAT = 0
-MIN_LNG = 180
-MAX_LNG = 0
+MIN_LAT, MAX_LAT, MIN_LNG, MAX_LNG = 40.0200685, 40.0982601, 116.2628457, 116.3528631
 GRID_SIZE = 50
 
 
@@ -77,6 +74,7 @@ def clean(tmpLs, file):
     for traces in tmpLs:
         tmp_traces = traces.copy()
         grid_set = set()
+        add = True
         for trace in traces:
             if trace[0] == '#':
                 continue
@@ -84,11 +82,19 @@ def clean(tmpLs, file):
             lat = float(trace.split(',')[1])
             if lng == 0 or lat == 0:
                 print(trace)
+                add = False
+                break
             if not (lat < MAX_LAT and lat > MIN_LAT and lng < MAX_LNG and lng > MIN_LNG):
+                add = False
                 print(lat, lng)
+                break
+            if trace[:4] != '2022':
+                add = False
+                print(trace)
+                break
             gridx, gridy = gps2grid(lat, lng)
             grid_set.add((gridx, gridy))
-        if len(grid_set) > 1:
+        if len(grid_set) > 1 and add:
             finalLs.append(tmp_traces)
     print(len(finalLs))
     with open(file, 'w') as f:
@@ -99,14 +105,14 @@ def clean(tmpLs, file):
 
 data_path = '/data/GeQian/g2s_2/data_for_GMM-Master/data/'
 get_border(data_path+'pure_data/newroad.txt')
-print('MIN_LAT=', MIN_LAT)
-print('MAX_LAT=', MAX_LAT)
-print('MIN_LNG=', MIN_LNG)
-print('MAX_LNG=', MAX_LNG)
+# print('MIN_LAT=', MIN_LAT)
+# print('MAX_LAT=', MAX_LAT)
+# print('MIN_LNG=', MIN_LNG)
+# print('MAX_LNG=', MAX_LNG)
 
 
 if __name__ == "__main__":
     # 40.058076, 116.338461
     # 85,130
-    tmpLs = readTrajFile('/data/GeQian/g2s_2/data_for_GMM-Master/data/pure_data/full_trace_15s.txt')
+    tmpLs = readTrajFile('/data/GeQian/g2s_2/data_for_GMM-Master/data/pure_data/full_trace_new.txt')
     clean(tmpLs, '/data/GeQian/g2s_2/data_for_GMM-Master/data/pure_data/full_trace_new.txt')
