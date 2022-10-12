@@ -2,14 +2,12 @@ import torch.nn as nn
 import torch
 import random
 import math
-from model.RoadGCN import RoadGCN
 from model.RoadGIN import RoadGIN
-from model.TraceGCN import TraceGCN
+from model.TraceGCNV1 import TraceGCN
 from model.seq2seqV1 import Seq2Seq
 from model.graphfilter import GraphFilter
 import torch.nn.functional as F
-from model.feature_encoder import FeatureEncoder
-from utils.utils import gps2grid_batch
+
 
 def mask_log_softmax(x, mask, log_flag=False):
     # [B, N]
@@ -22,6 +20,7 @@ def mask_log_softmax(x, mask, log_flag=False):
     else:
         output_custom = x_exp / x_exp_sum
     return output_custom
+
 
 def argmax(vec):
     # return the argmax as a python int
@@ -182,7 +181,8 @@ class GMM(nn.Module):
         full_grid_emb = torch.zeros(gdata.num_grids + 1, 8 * self.loc_dim).to(self.device)
         full_grid_emb[1:, :] = self.trace_gcn(pure_grid_feat,
                                               gdata.trace_inadj,
-                                              gdata.trace_outadj)
+                                              gdata.trace_outadj,
+                                              gdata.trace_weight)
         return full_road_emb, full_grid_emb
 
     def rnnhidden2prob(self,

@@ -4,8 +4,6 @@ from torch_sparse import SparseTensor
 import numpy as np
 import pickle
 
-from utils.utils import gps2grid
-
 
 class GraphData():
     def __init__(self, parent_path, layer, device) -> None:
@@ -23,7 +21,7 @@ class GraphData():
         trace_pt_path = data_path + 'trace_graph_pt/'
         road_pt_path = data_path + 'road_graph_pt/'
         # 2*num_of_edges
-        self.trace_weight = torch.load(trace_pt_path + 'inweight.pt')
+        self.trace_weight = torch.load(trace_pt_path + 'inweight.pt').to(device)
         # trace_outweight = torch.load(trace_pt_path + 'outweight.pt')
         trace_in_edge_index = torch.load(trace_pt_path + 'in_edge_index.pt')
         trace_out_edge_index = torch.load(trace_pt_path + 'out_edge_index.pt')
