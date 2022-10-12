@@ -175,8 +175,13 @@ def build_x_edge_index(G):
 
     edge_index = [[], []]
     for i in G.edges():
+        assert(int(i[0]) != int(i[1]))
         edge_index[0].append(int(i[0]))
         edge_index[1].append(int(i[1]))
+
+        edge_index[0].append(int(i[1]))
+        edge_index[1].append(int(i[0]))
+
     # print(G)
 
     edge_index = torch.tensor(edge_index)

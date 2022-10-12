@@ -116,15 +116,15 @@ def build_pyG(G):
     edge_index = [[], []]
     x = []
     weight = []
-    nodeinweight = [0] * G.number_of_nodes()
-    nodeoutweight = [0] * G.number_of_nodes()
+    # nodeinweight = [0] * G.number_of_nodes()
+    # nodeoutweight = [0] * G.number_of_nodes()
     for i in G.edges():
         edge_index[0].append(i[0])
         edge_index[1].append(i[1])
         tmp_weight = G[i[0]][i[1]]['weight']
         weight.append(tmp_weight)
-        nodeinweight[i[1]] += tmp_weight
-        nodeoutweight[i[0]] += tmp_weight
+        # nodeinweight[i[1]] += tmp_weight
+        # nodeoutweight[i[0]] += tmp_weight
 
     inweight = weight.copy()
     outweight = weight.copy()
@@ -132,17 +132,19 @@ def build_pyG(G):
     for i in G.nodes:
         x.append(grid2gps(G.nodes[i]['gridx'], G.nodes[i]['gridy'],G.nodes[i]['gridx'], G.nodes[i]['gridy']))
 
-    for i in range(len(weight)):
-        x1 = edge_index[0][i]
-        x2 = edge_index[1][i]
-        inweight[i] = inweight[i]/nodeinweight[x2]*G.in_degree(x2)/(G.in_degree(x2)+1)
-        outweight[i] = outweight[i]/nodeoutweight[x1]*G.out_degree(x1)/(G.out_degree(x1)+1)
+    # for i in range(len(weight)):
+    #     x1 = edge_index[0][i]
+    #     x2 = edge_index[1][i]
+    #     inweight[i] = inweight[i]
+    #     outweight[i] = outweight[i]
+        # inweight[i] = inweight[i]/nodeinweight[x2]*G.in_degree(x2)/(G.in_degree(x2)+1)
+        # outweight[i] = outweight[i]/nodeoutweight[x1]*G.out_degree(x1)/(G.out_degree(x1)+1)
 
-    for i in G.nodes:
-        edge_index[0].append(i)
-        edge_index[1].append(i)
-        inweight.append(1/(G.in_degree(i)+1))
-        outweight.append(1/(G.out_degree(i)+1))
+    # for i in G.nodes:
+    #     edge_index[0].append(i)
+    #     edge_index[1].append(i)
+    #     inweight.append(1/(G.in_degree(i)+1))
+    #     outweight.append(1/(G.out_degree(i)+1))
         # inweight.append()
     out_edge_index = torch.tensor(edge_index)
     in_edge_index = out_edge_index[[1, 0]]
