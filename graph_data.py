@@ -23,8 +23,8 @@ class GraphData():
         trace_pt_path = data_path + 'trace_graph_pt/'
         road_pt_path = data_path + 'road_graph_pt/'
         # 2*num_of_edges
-        trace_inweight = torch.load(trace_pt_path + 'inweight.pt')
-        trace_outweight = torch.load(trace_pt_path + 'outweight.pt')
+        self.trace_weight = torch.load(trace_pt_path + 'inweight.pt')
+        # trace_outweight = torch.load(trace_pt_path + 'outweight.pt')
         trace_in_edge_index = torch.load(trace_pt_path + 'in_edge_index.pt')
         trace_out_edge_index = torch.load(trace_pt_path + 'out_edge_index.pt')
         road_edge_index = torch.load(road_pt_path + 'edge_index.pt')
@@ -36,12 +36,10 @@ class GraphData():
         self.trace_inadj = SparseTensor(
             row=trace_in_edge_index[0],
             col=trace_in_edge_index[1],
-            value=trace_inweight,
             sparse_sizes=(self.num_grids, self.num_grids)).to(device)
         self.trace_outadj = SparseTensor(
             row=trace_out_edge_index[0],
             col=trace_out_edge_index[1],
-            value=trace_outweight,
             sparse_sizes=(self.num_grids, self.num_grids)).to(device)
         # load initial features of road graph
         self.road_x = torch.load(road_pt_path + 'x.pt').to(device)

@@ -1,1 +1,1 @@
-python -u train_gmm.py > gin_fully_connect_prob.txt
+python -u train_gmm.py --dev_id 0 > gin_fmulti_nonorm.txt

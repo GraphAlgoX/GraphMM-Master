@@ -11,6 +11,11 @@ GRID_SIZE = 50
 
 
 def gps2grid(lat, lng, grid_size=GRID_SIZE):
+    MIN_LAT = 40.0200685
+    MAX_LAT = 40.0982601
+    MIN_LNG = 116.2628457
+    MAX_LNG = 116.3528631
+    GRID_SIZE = 50
     """
     mbr:
         MBR class.
@@ -24,8 +29,35 @@ def gps2grid(lat, lng, grid_size=GRID_SIZE):
 
     locgrid_x = int((lat - MIN_LAT) / lat_unit) + 1
     locgrid_y = int((lng - MIN_LNG) / lng_unit) + 1
-
+    
     return locgrid_x, locgrid_y
+
+def gps2grid_batch(gps, grid_size=GRID_SIZE):
+    MIN_LAT = 40.0200685
+    MAX_LAT = 40.0982601
+    MIN_LNG = 116.2628457
+    MAX_LNG = 116.3528631
+    GRID_SIZE = 50
+    """
+    mbr:
+        MBR class.
+    grid size:
+        int. in meter
+    gps B*2
+    """
+    LAT_PER_METER = 8.993203677616966e-06
+    LNG_PER_METER = 1.1700193970443768e-05
+    lat_unit = LAT_PER_METER * grid_size
+    lng_unit = LNG_PER_METER * grid_size
+
+    # locgrid_x = int((lat - MIN_LAT) / lat_unit) + 1
+    # locgrid_y = int((lng - MIN_LNG) / lng_unit) + 1
+
+    ans = torch.zeros(gps.shape)
+    ans[:,0] = torch.floor((gps[:,0]-MIN_LAT)/lat_unit) + 1
+    ans[:,1] = torch.floor((gps[:,1]-MIN_LNG)/lng_unit) + 1
+    
+    return ans
 
 
 def grid2gps(gridx1, gridy1, gridx2, gridy2, grid_size=GRID_SIZE):
