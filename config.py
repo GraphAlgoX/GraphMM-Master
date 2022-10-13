@@ -18,6 +18,7 @@ def get_params():
     parser.add_argument("--atten_flag", type=int, default=1)
     parser.add_argument("--tf_ratio", type=float, default=0.5)
     parser.add_argument("--drop_prob", type=float, default=0.5)
+    parser.add_argument("--lambda", type=float, default=0.1)
     args, _ = parser.parse_known_args()
 
     return args
