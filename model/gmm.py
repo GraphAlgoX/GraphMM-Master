@@ -109,7 +109,7 @@ class GMM(nn.Module):
         full_road_emb, full_grid_emb = self.get_emb(gdata)
         # B, RL = tgt_roads.shape
         # B, TL = grid_traces.shape
-        emissions, penality_loss = self.get_probs(grid_traces=grid_traces,
+        emissions = self.get_probs(grid_traces=grid_traces,
                                    tgt_roads=tgt_roads,
                                    traces_gps=traces_gps,
                                    trace_lens=traces_lens,
@@ -135,7 +135,7 @@ class GMM(nn.Module):
         # full_loss -= sum(gold_score)
         # avg_loss = full_loss / B
         # return avg_loss
-        return emissions, penality_loss
+        return emissions
 
     def infer(self, grid_traces, traces_gps, traces_lens, road_lens, gdata,
               tf_ratio):
@@ -145,7 +145,7 @@ class GMM(nn.Module):
         """
         full_road_emb, full_grid_emb = self.get_emb(gdata)
 
-        emissions, _ = self.get_probs(grid_traces=grid_traces,
+        emissions = self.get_probs(grid_traces=grid_traces,
                                    tgt_roads=None,
                                    traces_gps=traces_gps,
                                    trace_lens=traces_lens,
@@ -270,11 +270,11 @@ class GMM(nn.Module):
         else:
             lst_road_id = probs[:, 0, :].argmax(1)
         # penality entry
-        tgt_mask = torch.zeros(B, int(max(road_lens)))
-        for i in range(len(road_lens)):
-            tgt_mask[i][:road_lens[i]] = 1.
-        tgt_mask = tgt_mask.to(self.device)
-        penality_loss, count = 0., 1
+        # tgt_mask = torch.zeros(B, int(max(road_lens)))
+        # for i in range(len(road_lens)):
+        #     tgt_mask[i][:road_lens[i]] = 1.
+        # tgt_mask = tgt_mask.to(self.device)
+        # penality_loss, count = 0., 1
         for t in range(1, max_RL):
             if teacher_force:
                 inputs = full_road_emb[lst_road_id].view(B, 1, -1)
@@ -289,16 +289,16 @@ class GMM(nn.Module):
                 first_constraint=False,
                 tmp_grid=grid_traces[:, 0])
             teacher_force = random.random() < tf_ratio
-            if self.training:
-                cur_p = torch.norm(inputs.squeeze(1) - full_road_emb.detach()[tgt_roads[:, t]], p=2, dim=1) * tgt_mask[:, t]
-                penality_loss += cur_p.sum()
-                count += torch.sum(tgt_mask[:, t] != 0)
+            # if self.training:
+            #     cur_p = torch.norm(inputs.squeeze(1) - full_road_emb.detach()[tgt_roads[:, t]], p=2, dim=1) * tgt_mask[:, t]
+            #     penality_loss += cur_p.sum()
+            #     count += torch.sum(tgt_mask[:, t] != 0)
             if teacher_force:
                 lst_road_id = tgt_roads[:, t]
             else:
                 lst_road_id = probs[:, t, :].argmax(1)
 
-        return probs, penality_loss / count
+        return probs
 
     ##################functions for CRF##################
     def transition(self, tag1, tag2, full_road_emb, A_list):

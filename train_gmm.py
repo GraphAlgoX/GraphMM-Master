@@ -27,7 +27,7 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         traces_gps = data[2].to(device)
         traces_lens = torch.tensor(data[3])
         road_lens = torch.tensor(data[4])
-        y_pred, penality_loss = model(grid_traces=grid_traces,
+        y_pred = model(grid_traces=grid_traces,
                     traces_gps=traces_gps,
                     traces_lens=traces_lens,
                     road_lens=road_lens,
@@ -39,14 +39,13 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         # print(y_pred.shape, tgt_roads.shape)
         mask = (tgt_roads.view(-1) != -1)
         loss = loss_fn(y_pred.view(-1, y_pred.shape[-1])[mask], tgt_roads.view(-1)[mask])
-        loss += args['lambda'] * penality_loss
         train_l_sum += loss.item()
         count += 1
         if count % 1 == 0:
             print(f"Iteration {count}: train_loss {loss.item()}")
-        optimizer.zero_grad(set_to_none=True)
+        optimizer.zero_grad()
         loss.backward()
-        nn.utils.clip_grad_norm_(model.parameters(), 1.)
+        nn.utils.clip_grad_norm_(model.parameters(), 5.)
         optimizer.step()
     return train_l_sum / count
 
@@ -121,7 +120,7 @@ def main(args):
     print("Loading model Done!!!")
     loss_fn = nn.CrossEntropyLoss()
     # loss_fn = nn.NLLLoss()
-    optimizer = optim.AdamW(params=model.parameters(),
+    optimizer = optim.Adam(params=model.parameters(),
                             lr=args['lr'],
                             weight_decay=args['wd'])
     for e in range(args['epochs']):
