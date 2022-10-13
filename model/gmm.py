@@ -215,9 +215,11 @@ class GMM(nn.Module):
             constraint = tmp @ gdata.map_matrix
         else:
             constraint = easy_filter_cache[lst_road_id.squeeze(1)]  # [B, N]
+            mask = (lst_road_id.squeeze(1) == -1)
+            constraint[mask] = 1
         # h_iH_R \odot f(A_R)
         
-        prob = (rnn_out @ full_road_emb.detach().T).squeeze(0)*(constraint>0)
+        prob = (rnn_out @ full_road_emb.detach().T).squeeze(0) * ( constraint > 0)
         # prob = mask_log_softmax(prob, constraint, log_flag=False)
         # prob = self.classification(rnn_out)
         # prob = (l2_norm(rnn_out) @ l2_norm(full_road_emb.detach()).T).squeeze(0)
