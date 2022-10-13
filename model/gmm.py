@@ -197,23 +197,23 @@ class GMM(nn.Module):
         hidden similarity computation
         """
         
-        # batchsize = lst_road_id.shape[0]
-        # constraint = torch.zeros(batchsize, gdata.num_roads).to(self.device)
-        # if first_constraint:
-        #     tmp = torch.zeros(batchsize, gdata.num_grids).to(self.device)
-        #     for idx in range(batchsize):
-        #         gridx, gridy = gdata.traceid2grid_dict[int(tmp_grid[idx]) - 1]
-        #         for i in range(gridx - 3, gridx + 4):
-        #             for j in range(gridy - 3, gridy + 4):
-        #                 if gdata.grid2traceid_dict.get((i, j)) is not None:
-        #                     tmp[idx, gdata.grid2traceid_dict[(i, j)]] = \
-        #                         1 / (abs(i - gridx) + abs(j - gridy) + 1)
-        #     constraint = tmp @ gdata.map_matrix
-        # else:
-        #     constraint = easy_filter_cache[lst_road_id.squeeze(1)]  # [B, N]
+        batchsize = lst_road_id.shape[0]
+        constraint = torch.zeros(batchsize, gdata.num_roads).to(self.device)
+        if first_constraint:
+            tmp = torch.zeros(batchsize, gdata.num_grids).to(self.device)
+            for idx in range(batchsize):
+                gridx, gridy = gdata.traceid2grid_dict[int(tmp_grid[idx]) - 1]
+                for i in range(gridx - 3, gridx + 4):
+                    for j in range(gridy - 3, gridy + 4):
+                        if gdata.grid2traceid_dict.get((i, j)) is not None:
+                            tmp[idx, gdata.grid2traceid_dict[(i, j)]] = \
+                                1 / (abs(i - gridx) + abs(j - gridy) + 1)
+            constraint = tmp @ gdata.map_matrix
+        else:
+            constraint = easy_filter_cache[lst_road_id.squeeze(1)]  # [B, N]
         # h_iH_R \odot f(A_R)
         
-        prob = (rnn_out @ full_road_emb.detach().T).squeeze(0)#*constraint
+        prob = (rnn_out @ full_road_emb.detach().T).squeeze(0)*(constraint>0)
         # prob = mask_log_softmax(prob, constraint, log_flag=False)
         # prob = self.classification(rnn_out)
         # prob = (l2_norm(rnn_out) @ l2_norm(full_road_emb.detach()).T).squeeze(0)

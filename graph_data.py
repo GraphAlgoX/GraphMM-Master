@@ -77,8 +77,9 @@ class GraphData():
             for k, v in self.grid2traceid_dict.items()
         }
         # load f(A_R)
-        A = torch.tensor(np.array(nx.adjacency_matrix(road_graph).todense()),
-                         dtype=torch.float)
+        # A = torch.tensor(np.array(nx.adjacency_matrix(road_graph).todense()),
+        #                  dtype=torch.float)
+        A = torch.load(data_path+'A.pt')
         self.A_list = self.get_adj_poly(A, layer) 
         # A_list [1, n, n]
 
