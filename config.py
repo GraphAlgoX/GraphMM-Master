@@ -9,7 +9,7 @@ def get_params():
     parser.add_argument("--parent_path",
                         type=str,
                         default="/data/GeQian/g2s_2/data_for_GMM-Master/")
-    parser.add_argument("--loc_dim", type=int, default=64)
+    parser.add_argument("--emb_dim", type=int, default=64)
     parser.add_argument("--layer", type=int, default=4)
     parser.add_argument("--beam_size", type=int, default=5)
     parser.add_argument("--wd", type=float, default=0.)
@@ -17,6 +17,7 @@ def get_params():
     parser.add_argument("--use_gcn", type=int, default=1)
     parser.add_argument("--atten_flag", type=int, default=1)
     parser.add_argument("--tf_ratio", type=float, default=0.5)
+    parser.add_argument("--drop_prob", type=float, default=0.5)
     args, _ = parser.parse_known_args()
 
     return args

@@ -84,9 +84,9 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
 
 
 def main(args):
-    save_path = "ckpt/bz{}_lr{}_ep{}_locd{}_gcn{}_att{}_best_gclip.pt".format(
-        args['batch_size'], args['lr'], args['epochs'], args['loc_dim'], args['use_gcn'], args['atten_flag'])
-    root_path = "../data_for_GMM-Master/"
+    save_path = "ckpt/bz{}_lr{}_ep{}_edim{}_att{}_dp{}_best_gclip.pt".format(
+        args['batch_size'], args['lr'], args['epochs'], args['emb_dim'], args['atten_flag'], args['drop_prob'])
+    root_path = args['parent_path']
     trainset = MyDataset(root_path, "train")
     valset = MyDataset(root_path, "val")
     testset = MyDataset(root_path, "test")
@@ -108,11 +108,12 @@ def main(args):
                       layer=args['layer'],
                       device=device)
     print('get graph extra data finished!')
-    model = GMM(loc_dim=args['loc_dim'],
+    model = GMM(emb_dim=args['emb_dim'],
                 target_size=gdata.num_roads,
                 beam_size=args['beam_size'],
                 device=device,
-                atten_flag=args['atten_flag'])
+                atten_flag=args['atten_flag'],
+                drop_prob=args['drop_prob'])
     model = model.to(device)
     # model.init_cache()
     best_acc = 0.
