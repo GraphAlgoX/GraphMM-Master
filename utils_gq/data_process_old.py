@@ -21,13 +21,13 @@ def randomDownSampleBySize(sampleData: list, sampleRate: float,
     for i in range(len(sampleData)):
         trajList = sampleData[i]
         tempRes = [trajList[0], trajList[1]]  # 首节点
-        tmpIdx = [0]
+        tmpIdx = [0,1]
         for j in range(2, len(trajList) - 1):
             if (random.random() <= sampleRate):
                 tempRes.append(trajList[j])
-                tmpIdx.append(j-1)
+                tmpIdx.append(j)
         tempRes.append(trajList[-1])  # 尾节点
-        tmpIdx.append(len(trajList) - 2)
+        tmpIdx.append(len(trajList) - 1)
         # ignore short traj
         if (len(tempRes) < threshold):
             continue
@@ -68,7 +68,7 @@ class DataProcess():
         beginLs = self.readTrajFile(traj_input_path)
         # self.max_road_len = self.getSuitableCut(beginLs)
         self.finalLs = self.cutData(beginLs)
-        self.traces_ls, self.roads_ls, self.downsampleIdx = self.sampling()
+        self.traces_ls, self.roads_ls = self.sampling()
         self.splitData(output_dir)
 
     def readTrajFile(self, filePath):
@@ -121,7 +121,7 @@ class DataProcess():
                 roads.append(int(i.split(',')[3]))
             traces_ls.append(traces)
             roads_ls.append(roads)
-        return traces_ls, roads_ls, downsampleIdx
+        return traces_ls, roads_ls
 
     def cutData(self, beginLs): 
         # each trace [min_lens+1, max_lens+min_lens+1) 
@@ -180,11 +180,11 @@ class DataProcess():
         trainset, valset, testset = [], [], []
         for i in range(num_sample):
             if i in train_idxs:
-                trainset.extend([self.traces_ls[i], self.roads_ls[i], self.downsampleIdx[i]])
+                trainset.extend([self.traces_ls[i], self.roads_ls[i]])
             elif i in val_idxs:
-                valset.extend([self.traces_ls[i], self.roads_ls[i], self.downsampleIdx[i]])
+                valset.extend([self.traces_ls[i], self.roads_ls[i]])
             else:
-                testset.extend([self.traces_ls[i], self.roads_ls[i], self.downsampleIdx[i]])
+                testset.extend([self.traces_ls[i], self.roads_ls[i]])
 
         with open(os.path.join(train_data_dir, "train.json"), 'w') as fp:
             json.dump(trainset, fp)

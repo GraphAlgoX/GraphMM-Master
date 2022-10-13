@@ -73,9 +73,10 @@ class GMM(nn.Module):
         self.graphfilter = GraphFilter(emb_dim=emb_dim)
         self.road_feat_fc = nn.Linear(28, emb_dim) # 3*8 + 4
         self.trace_feat_fc = nn.Linear(4, emb_dim)
+        self.fc_input = nn.Linear(2*self.emb_dim+3, 2*self.emb_dim)
         # self.feat_encoder = FeatureEncoder(4, loc_dim)
         # self.exp_fc_road = nn.Linear(4, 4 * loc_dim)
-        # self.exp_fc_traj = nn.Linear(2, 4 * loc_dim)
+        # self.exp_fc_traj = nn.Linear(2, 4)
         # self.norm_road = nn.BatchNorm1d(4)
         # self.norm_traj = nn.BatchNorm1d(2)
         # self.proj_out = nn.Sequential(
@@ -100,7 +101,7 @@ class GMM(nn.Module):
         # self.classification = nn.Linear(4 * loc_dim, target_size)
 
     def forward(self, grid_traces, tgt_roads, traces_gps, traces_lens,
-                road_lens, gdata, tf_ratio):
+                road_lens, gdata, sample_Idx, tf_ratio):
         """
         grid_traces: (batch_size, seq_len, emb_size)
         tgt_roads: (batch_size, seq_len1, emb_size)
@@ -117,6 +118,7 @@ class GMM(nn.Module):
                                    tf_ratio=tf_ratio,
                                    full_grid_emb=full_grid_emb,
                                    gdata=gdata,
+                                   sample_Idx=sample_Idx,
                                    easy_filter_cache=gdata.A_list.squeeze(0),
                                    full_road_emb=full_road_emb)
         # B, L, N
@@ -137,7 +139,7 @@ class GMM(nn.Module):
         # return avg_loss
         return emissions, penality_loss
 
-    def infer(self, grid_traces, traces_gps, traces_lens, road_lens, gdata,
+    def infer(self, grid_traces, traces_gps, traces_lens, road_lens, sample_Idx, gdata,
               tf_ratio):
         """
         grid_traces: (batch_size, seq_len, emb_size)
@@ -152,6 +154,7 @@ class GMM(nn.Module):
                                    road_lens=road_lens,
                                    tf_ratio=tf_ratio,
                                    full_grid_emb=full_grid_emb,
+                                   sample_Idx=sample_Idx,
                                    gdata=gdata,
                                    easy_filter_cache=gdata.A_list.squeeze(0),
                                    full_road_emb=full_road_emb)
@@ -224,7 +227,7 @@ class GMM(nn.Module):
 
         return prob
 
-    def get_probs(self, grid_traces, tgt_roads, traces_gps, trace_lens,
+    def get_probs(self, grid_traces, tgt_roads, traces_gps, sample_Idx, trace_lens,
                   road_lens, tf_ratio, full_road_emb, full_grid_emb,
                   easy_filter_cache, gdata):
         """
@@ -243,7 +246,8 @@ class GMM(nn.Module):
         # trace_grids = gps2grid_batch(trace_grids)
         # traces_gps = self.norm_traj(traces_gps.permute(0, 2, 1)).permute(0, 2, 1)
         # traces_gps = self.exp_fc_traj(traces_gps)
-        # rnn_input = torch.cat((rnn_input, traces_gps), dim=-1)
+        rnn_input = torch.cat([rnn_input, traces_gps, sample_Idx.unsqueeze(-1)], dim=-1)
+        rnn_input = self.fc_input(rnn_input)
         encoder_outputs, hiddens = self.seq2seq.encode(rnn_input, trace_lens)
         # start decode
         probs = torch.zeros(B, max_RL, gdata.num_roads).to(self.device)

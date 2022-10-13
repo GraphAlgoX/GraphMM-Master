@@ -25,14 +25,17 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         grid_traces = data[0].to(device)
         tgt_roads = data[1].to(device)
         traces_gps = data[2].to(device)
-        traces_lens = torch.tensor(data[3])
-        road_lens = torch.tensor(data[4])
+        sample_Idx = data[3].to(device)
+        traces_lens = torch.tensor(data[4])
+        road_lens = torch.tensor(data[5])
+
         y_pred, penality_loss = model(grid_traces=grid_traces,
                     traces_gps=traces_gps,
                     traces_lens=traces_lens,
                     road_lens=road_lens,
                     tgt_roads=tgt_roads,
                     gdata=gdata,
+                    sample_Idx=sample_Idx,
                     tf_ratio=args['tf_ratio'])
         # g = make_dot(y_pred, params=dict(model.named_parameters()))
         # g.render('gmm', view=False)
@@ -60,13 +63,15 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
             grid_traces = data[0].to(device)
             tgt_roads = data[1]
             traces_gps = data[2].to(device)
-            traces_lens = data[3]
-            road_lens = data[4]
+            sample_Idx = data[3].to(device)
+            traces_lens = data[4]
+            road_lens = data[5]
             _, infer_seq = model.infer(grid_traces=grid_traces,
                                        traces_gps=traces_gps,
                                        traces_lens=traces_lens,
                                        road_lens=road_lens,
                                        gdata=gdata,
+                                       sample_Idx=sample_Idx,
                                        tf_ratio=tf_ratio)
             infer_seq = infer_seq.argmax(dim=-1).detach().cpu().numpy().flatten()
             tgt_roads = tgt_roads.flatten().numpy()
