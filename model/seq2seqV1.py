@@ -35,10 +35,12 @@ class Seq2Seq(nn.Module):
                  input_size,
                  hidden_size,
                  atten_flag=True,
-                 bi=True) -> None:
+                 bi=True,
+                 drop_prob=0.5) -> None:
         super(Seq2Seq, self).__init__()
         self.hidden_size = hidden_size
         self.atten_flag = atten_flag
+        self.drop_prob = drop_prob
         self.bi = bi
         self.D = 2 if self.bi else 1
         self.encoder = nn.GRU(input_size=input_size,
@@ -50,12 +52,12 @@ class Seq2Seq(nn.Module):
             self.attn = Attention(enc_hid_dim=hidden_size * self.D,
                                   dec_hid_dim=hidden_size)
             dec_input_dim += hidden_size
-        self.dropout = nn.Dropout(0.5)
         self.decoder = nn.GRU(input_size=dec_input_dim,
                               hidden_size=hidden_size,
                               batch_first=True)
 
     def encode(self, src, src_len):
+        src = F.dropout(src, self.drop_prob, training=self.training)
         # encode traj sequence
         packed_embedded = nn.utils.rnn.pack_padded_sequence(
             src, src_len, batch_first=True, enforce_sorted=False)
@@ -75,7 +77,7 @@ class Seq2Seq(nn.Module):
         hidden: (1, batch_size, hidden_size)
         encoder_outputs: (batch_size, src_len, num_directions * hidden_size)
         """
-        src = self.dropout(src)
+        src = F.dropout(src, self.drop_prob, training=self.training)
         if self.atten_flag:
             a = self.attn(hidden, encoder_outputs, attn_mask)
             # (batch size, 1, src len)

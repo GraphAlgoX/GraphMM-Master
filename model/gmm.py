@@ -49,26 +49,30 @@ def l2_norm(x):
 
 class GMM(nn.Module):
     def __init__(self,
-                 loc_dim,
+                 emb_dim,
                  device,
                  target_size,
                  beam_size,
-                 atten_flag=True) -> None:
+                 atten_flag=True,
+                 drop_prob=0.5,
+                 bi=True) -> None:
         super().__init__()
         self.device = device
-        self.loc_dim = loc_dim
+        self.emb_dim = emb_dim
         self.target_size = target_size
         self.beam_size = beam_size
         self.atten_flag = atten_flag
         # self.road_gcn = RoadGCN(4 * loc_dim)
-        self.road_gin = RoadGIN(4 * loc_dim)
-        self.trace_gcn = TraceGCN(4 * loc_dim)
-        self.seq2seq = Seq2Seq(input_size=8 * loc_dim,
-                               hidden_size=4 * loc_dim,
-                               atten_flag=atten_flag)
-        self.graphfilter = GraphFilter(emb_dim=4 * loc_dim)
-        self.feat_fc = nn.Linear(28, 4 * loc_dim) # 3*8 + 4
-        self.trace_feat_fc = nn.Linear(4, 4*loc_dim)
+        self.road_gin = RoadGIN(emb_dim)
+        self.trace_gcn = TraceGCN(emb_dim)
+        self.seq2seq = Seq2Seq(input_size=2 * emb_dim,
+                               hidden_size=emb_dim,
+                               atten_flag=atten_flag,
+                               drop_prob=drop_prob,
+                               bi=bi)
+        self.graphfilter = GraphFilter(emb_dim=emb_dim)
+        self.road_feat_fc = nn.Linear(28, emb_dim) # 3*8 + 4
+        self.trace_feat_fc = nn.Linear(4, emb_dim)
         # self.feat_encoder = FeatureEncoder(4, loc_dim)
         # self.exp_fc_road = nn.Linear(4, 4 * loc_dim)
         # self.exp_fc_traj = nn.Linear(2, 4 * loc_dim)
@@ -93,7 +97,7 @@ class GMM(nn.Module):
         #     nn.ReLU(),
         #     nn.Linear(8 * loc_dim, 4 * loc_dim)
         # )
-        self.classification = nn.Linear(4 * loc_dim, target_size)
+        # self.classification = nn.Linear(4 * loc_dim, target_size)
 
     def forward(self, grid_traces, tgt_roads, traces_gps, traces_lens,
                 road_lens, gdata, tf_ratio):
@@ -105,7 +109,7 @@ class GMM(nn.Module):
         full_road_emb, full_grid_emb = self.get_emb(gdata)
         # B, RL = tgt_roads.shape
         # B, TL = grid_traces.shape
-        emissions = self.get_probs(grid_traces=grid_traces,
+        emissions, penality_loss = self.get_probs(grid_traces=grid_traces,
                                    tgt_roads=tgt_roads,
                                    traces_gps=traces_gps,
                                    trace_lens=traces_lens,
@@ -131,7 +135,7 @@ class GMM(nn.Module):
         # full_loss -= sum(gold_score)
         # avg_loss = full_loss / B
         # return avg_loss
-        return emissions
+        return emissions, penality_loss
 
     def infer(self, grid_traces, traces_gps, traces_lens, road_lens, gdata,
               tf_ratio):
@@ -141,7 +145,7 @@ class GMM(nn.Module):
         """
         full_road_emb, full_grid_emb = self.get_emb(gdata)
 
-        emissions = self.get_probs(grid_traces=grid_traces,
+        emissions, _ = self.get_probs(grid_traces=grid_traces,
                                    tgt_roads=None,
                                    traces_gps=traces_gps,
                                    trace_lens=traces_lens,
@@ -167,7 +171,7 @@ class GMM(nn.Module):
         gain road embedding and grid embedding
         """
         # road_x = self.feat_encoder(gdata.road_x)
-        road_x = self.feat_fc(gdata.road_x)
+        road_x = self.road_feat_fc(gdata.road_x)
         # road_x = self.feat_fc(F.normalize(gdata.road_x))
         # road_x = self.exp_fc_road(self.norm_road(gdata.road_x))
         # full_road_emb = self.road_gcn(road_x, gdata.road_adj)
@@ -178,7 +182,7 @@ class GMM(nn.Module):
         # pure_grid_feat[gdata.singleton_grid_mask] = self.exp_fc_road(singleton_x)
         # pure_grid_feat[gdata.singleton_grid_mask] = self.feat_encoder(gdata.singleton_grid_location)
         pure_grid_feat[gdata.singleton_grid_mask] = self.trace_feat_fc(gdata.singleton_grid_location)
-        full_grid_emb = torch.zeros(gdata.num_grids + 1, 8 * self.loc_dim).to(self.device)
+        full_grid_emb = torch.zeros(gdata.num_grids + 1, 2 * self.emb_dim).to(self.device)
         full_grid_emb[1:, :] = self.trace_gcn(pure_grid_feat,
                                               gdata.trace_inadj,
                                               gdata.trace_outadj,
@@ -265,12 +269,17 @@ class GMM(nn.Module):
             lst_road_id = tgt_roads[:, 0]
         else:
             lst_road_id = probs[:, 0, :].argmax(1)
+        # penality entry
+        tgt_mask = torch.zeros(B, int(max(road_lens)))
+        for i in range(len(road_lens)):
+            tgt_mask[i][:road_lens[i]] = 1.
+        tgt_mask = tgt_mask.to(self.device)
+        penality_loss, count = 0., 1
         for t in range(1, max_RL):
             if teacher_force:
                 inputs = full_road_emb[lst_road_id].view(B, 1, -1)
             inputs, hiddens = self.seq2seq.decode(inputs, hiddens,
                                                   encoder_outputs, attn_mask)
-
             probs[:, t, :] = self.rnnhidden2prob(
                 lst_road_id=lst_road_id.view(-1, 1),
                 rnn_out=inputs.squeeze(1),
@@ -280,12 +289,16 @@ class GMM(nn.Module):
                 first_constraint=False,
                 tmp_grid=grid_traces[:, 0])
             teacher_force = random.random() < tf_ratio
+            if self.training:
+                cur_p = torch.norm(inputs.squeeze(1) - full_road_emb.detach()[tgt_roads[:, t]], p=2, dim=1) * tgt_mask[:, t]
+                penality_loss += cur_p.sum()
+                count += torch.sum(tgt_mask[:, t] != 0)
             if teacher_force:
                 lst_road_id = tgt_roads[:, t]
             else:
                 lst_road_id = probs[:, t, :].argmax(1)
 
-        return probs
+        return probs, penality_loss / count
 
     ##################functions for CRF##################
     def transition(self, tag1, tag2, full_road_emb, A_list):

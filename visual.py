@@ -16,7 +16,7 @@ gdata = GraphData(parent_path=args['parent_path'],
                     layer=args['layer'],
                     device=device)
 
-model = GMM(loc_dim=args['loc_dim'],
+model = GMM(emb_dim=args['emb_dim'],
             target_size=gdata.num_roads,
             beam_size=args['beam_size'],
             device=device,
