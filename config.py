@@ -4,11 +4,11 @@ import argparse
 def get_params():
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch_size", type=int, default=256)
-    parser.add_argument("--epochs", type=int, default=500)
+    parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--lr", type=float, default=0.0005)
     parser.add_argument("--parent_path",
                         type=str,
-                        default="../data_for_GMM-Master/")
+                        default="/data/GeQian/g2s_2/data_for_GMM-Master/")
     parser.add_argument("--emb_dim", type=int, default=256)
     parser.add_argument("--layer", type=int, default=4)
     parser.add_argument("--beam_size", type=int, default=5)

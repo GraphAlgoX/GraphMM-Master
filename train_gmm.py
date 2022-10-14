@@ -125,7 +125,7 @@ def main(args):
     print("Loading model Done!!!")
     loss_fn = nn.CrossEntropyLoss()
     # loss_fn = nn.NLLLoss()
-    optimizer = optim.Adam(params=model.parameters(),
+    optimizer = optim.AdamW(params=model.parameters(),
                             lr=args['lr'],
                             weight_decay=args['wd'])
     for e in range(args['epochs']):

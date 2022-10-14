@@ -204,25 +204,25 @@ class GMM(nn.Module):
         hidden similarity computation
         """
         
-        batchsize = lst_road_id.shape[0]
-        constraint = torch.zeros(batchsize, gdata.num_roads).to(self.device)
-        if first_constraint:
-            tmp = torch.zeros(batchsize, gdata.num_grids).to(self.device)
-            for idx in range(batchsize):
-                gridx, gridy = gdata.traceid2grid_dict[int(tmp_grid[idx]) - 1]
-                for i in range(gridx - 3, gridx + 4):
-                    for j in range(gridy - 3, gridy + 4):
-                        if gdata.grid2traceid_dict.get((i, j)) is not None:
-                            tmp[idx, gdata.grid2traceid_dict[(i, j)]] = \
-                                1 / (abs(i - gridx) + abs(j - gridy) + 1)
-            constraint = tmp @ gdata.map_matrix
-        else:
-            constraint = easy_filter_cache[lst_road_id.squeeze(1)]  # [B, N]
-            mask = (lst_road_id.squeeze(1) == -1)
-            constraint[mask] = 1
+        # batchsize = lst_road_id.shape[0]
+        # constraint = torch.zeros(batchsize, gdata.num_roads).to(self.device)
+        # if first_constraint:
+        #     tmp = torch.zeros(batchsize, gdata.num_grids).to(self.device)
+        #     for idx in range(batchsize):
+        #         gridx, gridy = gdata.traceid2grid_dict[int(tmp_grid[idx]) - 1]
+        #         for i in range(gridx - 3, gridx + 4):
+        #             for j in range(gridy - 3, gridy + 4):
+        #                 if gdata.grid2traceid_dict.get((i, j)) is not None:
+        #                     tmp[idx, gdata.grid2traceid_dict[(i, j)]] = \
+        #                         1 / (abs(i - gridx) + abs(j - gridy) + 1)
+        #     constraint = tmp @ gdata.map_matrix
+        # else:
+        #     constraint = easy_filter_cache[lst_road_id.squeeze(1)]  # [B, N]
+        #     mask = (lst_road_id.squeeze(1) == -1)
+        #     constraint[mask] = 1
         # h_iH_R \odot f(A_R)
         
-        prob = (rnn_out @ full_road_emb.detach().T).squeeze(0) * ( constraint > 0)
+        prob = (rnn_out @ full_road_emb.detach().T).squeeze(0)
         # prob = mask_log_softmax(prob, constraint, log_flag=False)
         # prob = self.classification(rnn_out)
         # prob = (l2_norm(rnn_out) @ l2_norm(full_road_emb.detach()).T).squeeze(0)
@@ -262,14 +262,7 @@ class GMM(nn.Module):
             attn_mask = attn_mask.to(self.device)
         inputs, hiddens = self.seq2seq.decode(inputs, hiddens, encoder_outputs,
                                               attn_mask)
-        probs[:, 0, :] = self.rnnhidden2prob(
-            lst_road_id=torch.tensor([[0]] * B).to(self.device),
-            rnn_out=inputs.squeeze(1),
-            gdata=gdata,
-            full_road_emb=full_road_emb,
-            easy_filter_cache=easy_filter_cache,
-            first_constraint=True,
-            tmp_grid=grid_traces[:, 0])  # to be finished by set mask = grid 1
+        probs[:, 0, :] = inputs.squeeze(1) @ full_road_emb.detach().T
         teacher_force = random.random() < tf_ratio
         if teacher_force:
             lst_road_id = tgt_roads[:, 0]
@@ -286,14 +279,7 @@ class GMM(nn.Module):
                 inputs = full_road_emb[lst_road_id].view(B, 1, -1)
             inputs, hiddens = self.seq2seq.decode(inputs, hiddens,
                                                   encoder_outputs, attn_mask)
-            probs[:, t, :] = self.rnnhidden2prob(
-                lst_road_id=lst_road_id.view(-1, 1),
-                rnn_out=inputs.squeeze(1),
-                gdata=gdata,
-                full_road_emb=full_road_emb,
-                easy_filter_cache=easy_filter_cache,
-                first_constraint=False,
-                tmp_grid=grid_traces[:, 0])
+            probs[:, t, :] = inputs.squeeze(1) @ full_road_emb.detach().T
             teacher_force = random.random() < tf_ratio
             # if self.training:
             #     cur_p = torch.norm(inputs.squeeze(1) - full_road_emb.detach()[tgt_roads[:, t]], p=2, dim=1) * tgt_mask[:, t]
