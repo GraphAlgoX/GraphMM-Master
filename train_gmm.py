@@ -29,7 +29,7 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         traces_lens = torch.tensor(data[4])
         road_lens = torch.tensor(data[5])
 
-        y_pred = model(grid_traces=grid_traces,
+        loss = model(grid_traces=grid_traces,
                     traces_gps=traces_gps,
                     traces_lens=traces_lens,
                     road_lens=road_lens,
@@ -40,8 +40,8 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         # g = make_dot(y_pred, params=dict(model.named_parameters()))
         # g.render('gmm', view=False)
         # print(y_pred.shape, tgt_roads.shape)
-        mask = (tgt_roads.view(-1) != -1)
-        loss = loss_fn(y_pred.view(-1, y_pred.shape[-1])[mask], tgt_roads.view(-1)[mask])
+        # mask = (tgt_roads.view(-1) != -1)
+        # loss = loss_fn(y_pred.view(-1, y_pred.shape[-1])[mask], tgt_roads.view(-1)[mask])
         train_l_sum += loss.item()
         count += 1
         if count % 1 == 0:

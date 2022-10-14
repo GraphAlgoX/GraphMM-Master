@@ -142,8 +142,8 @@ class GMM(nn.Module):
         tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
         for i in range(len(road_lens)):
             tgt_mask[i][:road_lens[i]] = 1.
-        tgt_mask = tgt_mask.to(self.device)
-        loss = -self.crf(emissions, tgt_roads, full_road_emb.squeeze(0), gdata.A_list, tgt_mask)
+        tgt_mask = tgt_mask.bool().to(self.device)
+        loss = -self.crf(emissions, tgt_roads, full_road_emb, gdata.A_list.squeeze(0), tgt_mask)
         return loss
 
     def infer(self, grid_traces, traces_gps, traces_lens, road_lens, sample_Idx, gdata,
@@ -177,7 +177,7 @@ class GMM(nn.Module):
         tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
         for i in range(len(road_lens)):
             tgt_mask[i][:road_lens[i]] = 1.
-        tgt_mask = tgt_mask.to(self.device)
+        tgt_mask = tgt_mask.bool().to(self.device)
         preds = self.crf(emissions, full_road_emb, gdata.A_list.squeeze(0), tgt_mask)
         return None, preds
 

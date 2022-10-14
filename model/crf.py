@@ -24,7 +24,7 @@ class CRF(nn.Module):
         emb2 = full_road_emb[tag2].unsqueeze(-1)
         # (batch_size, )
         r = F.relu(torch.bmm(emb1, emb2)).squeeze()
-        energy = A_list[:, tag1, tag2] * r
+        energy = A_list[tag1, tag2] * r
         return energy.flatten()
 
     def transitions(self, full_road_emb, A_list):
@@ -107,7 +107,7 @@ class CRF(nn.Module):
         # the score that the first timestep has tag j
         # shape: (batch_size, num_tags)
         score = emissions[0]
-
+        trans = self.transitions(full_road_emb, A_list)
         for i in range(1, seq_length):
             # Broadcast score for every possible next tag
             # shape: (batch_size, num_tags, 1)
@@ -122,7 +122,7 @@ class CRF(nn.Module):
             # possible tag sequences so far that end with transitioning from tag i to tag j
             # and emitting
             # shape: (batch_size, num_tags, num_tags)
-            next_score = broadcast_score + self.transitions(full_road_emb, A_list) + broadcast_emissions
+            next_score = broadcast_score + trans + broadcast_emissions
 
             # Sum over all possible current tags, but we're in score space, so a sum
             # becomes a log-sum-exp: for each sample, entry i stores the sum of scores of
