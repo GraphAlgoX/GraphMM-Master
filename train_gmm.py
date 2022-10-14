@@ -1,4 +1,5 @@
 import nni
+import numpy as np
 import torch
 import torch.optim as optim
 from config import get_params
@@ -73,6 +74,7 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
                                        sample_Idx=sample_Idx,
                                        tf_ratio=tf_ratio)
             # infer_seq = infer_seq.argmax(dim=-1).detach().cpu().numpy().flatten()
+            infer_seq = np.array(infer_seq).flatten()
             tgt_roads = tgt_roads.flatten().numpy()
             mask = (tgt_roads != -1)
             acc = accuracy_score(infer_seq[mask], tgt_roads[mask])

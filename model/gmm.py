@@ -178,7 +178,7 @@ class GMM(nn.Module):
         for i in range(len(road_lens)):
             tgt_mask[i][:road_lens[i]] = 1.
         tgt_mask = tgt_mask.bool().to(self.device)
-        preds = self.crf(emissions, full_road_emb, gdata.A_list.squeeze(0), tgt_mask)
+        preds = self.crf.decode(emissions, full_road_emb, gdata.A_list.squeeze(0), tgt_mask)
         return None, preds
 
     def get_emb(self, gdata):
