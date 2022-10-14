@@ -6,6 +6,7 @@ from model.RoadGIN import RoadGIN
 from model.TraceGCNV1 import TraceGCN
 from model.seq2seqV1 import Seq2Seq
 from model.graphfilter import GraphFilter
+from model.crf import CRF
 import torch.nn.functional as F
 
 
@@ -74,6 +75,7 @@ class GMM(nn.Module):
         self.road_feat_fc = nn.Linear(28, emb_dim) # 3*8 + 4
         self.trace_feat_fc = nn.Linear(4, emb_dim)
         self.fc_input = nn.Linear(2*self.emb_dim+3, 2*self.emb_dim)
+        self.crf = CRF(self.target_size, self.device)
         # self.feat_encoder = FeatureEncoder(4, loc_dim)
         # self.exp_fc_road = nn.Linear(4, 4 * loc_dim)
         # self.exp_fc_traj = nn.Linear(2, 4)
@@ -137,7 +139,12 @@ class GMM(nn.Module):
         # full_loss -= sum(gold_score)
         # avg_loss = full_loss / B
         # return avg_loss
-        return emissions
+        tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
+        for i in range(len(road_lens)):
+            tgt_mask[i][:road_lens[i]] = 1.
+        tgt_mask = tgt_mask.to(self.device)
+        loss = -self.crf(emissions, tgt_roads, full_road_emb.squeeze(0), gdata.A_list, tgt_mask)
+        return loss
 
     def infer(self, grid_traces, traces_gps, traces_lens, road_lens, sample_Idx, gdata,
               tf_ratio):
@@ -167,7 +174,12 @@ class GMM(nn.Module):
         #         feat, full_road_emb, gdata.A_list)
         #     infer_output[idx, :road_lens[idx]] = tag_seq
         # return score, infer_output
-        return None, F.softmax(emissions, dim=-1)
+        tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
+        for i in range(len(road_lens)):
+            tgt_mask[i][:road_lens[i]] = 1.
+        tgt_mask = tgt_mask.to(self.device)
+        preds = self.crf(emissions, full_road_emb, gdata.A_list.squeeze(0), tgt_mask)
+        return None, preds
 
     def get_emb(self, gdata):
         """
