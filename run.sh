@@ -1,1 +1,1 @@
-python -u train_gmm.py --dev_id 0 > log/new_trace_constraint_multiply_wd_full_1.0_tf.txt
+python -u train_gmm.py --dev_id 0 > log/constraint_multiply_wd_full_0.8_tf_full.txt

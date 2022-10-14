@@ -29,7 +29,7 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         traces_lens = torch.tensor(data[4])
         road_lens = torch.tensor(data[5])
 
-        y_pred, penality_loss = model(grid_traces=grid_traces,
+        y_pred = model(grid_traces=grid_traces,
                     traces_gps=traces_gps,
                     traces_lens=traces_lens,
                     road_lens=road_lens,
