@@ -1,3 +1,4 @@
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,11 +9,12 @@ class CRF(nn.Module):
     Conditional random field.
     """
 
-    def __init__(self, num_tags, device, batch_first=True) -> None:
+    def __init__(self, num_tags, device, batch_first=True, beamsize=5) -> None:
         super().__init__()
         self.num_tags = num_tags
         self.batch_first = batch_first
         self.device = device
+        self.beamsize = beamsize
 
     def transition(self, tag1, tag2, full_road_emb, A_list):
         """
@@ -100,7 +102,7 @@ class CRF(nn.Module):
         emissions: (seq_length, batch_size, num_tags)
         mask: (seq_length, batch_size)
         """
-        seq_length = emissions.size(0)
+        seq_length, batch_size, num_tags = emissions.shape
 
         # Start transition score and first emission; score has size of
         # (batch_size, num_tags) where for each batch, the j-th column stores
@@ -111,32 +113,45 @@ class CRF(nn.Module):
         for i in range(1, seq_length):
             # Broadcast score for every possible next tag
             # shape: (batch_size, num_tags, 1)
-            broadcast_score = score.unsqueeze(2)
 
-            # Broadcast emission score for every possible current tag
-            # shape: (batch_size, 1, num_tags)
-            broadcast_emissions = emissions[i].unsqueeze(1)
+            # broadcast_score = score.unsqueeze(2)
+            for bs in range(batch_size):
+                alphas_t = (torch.ones(1, num_tags) * float('-inf')).to(
+                    self.device)
 
-            # Compute the score tensor of size (batch_size, num_tags, num_tags) where
-            # for each sample, entry at row i and column j stores the sum of scores of all
-            # possible tag sequences so far that end with transitioning from tag i to tag j
-            # and emitting
-            # shape: (batch_size, num_tags, num_tags)
-            next_score = broadcast_score + trans + broadcast_emissions
+                _, index = score[bs].topk(self.beamsize, largest=True)
+                next_tag_set = A_list[index.squeeze(0), :].sum(dim=0).nonzero().squeeze(1)
 
-            # Sum over all possible current tags, but we're in score space, so a sum
-            # becomes a log-sum-exp: for each sample, entry i stores the sum of scores of
-            # all possible tag sequences so far, that end in tag i
-            # shape: (batch_size, num_tags)
-            next_score = torch.logsumexp(next_score, dim=1)
+                for next_tag in next_tag_set:
+
+                # Broadcast emission score for every possible current tag
+                # shape: (batch_size, 1, num_tags)
+                    broadcast_emissions = emissions[i,bs,next_tag].unsqueeze(-1)
+
+                # Compute the score tensor of size (batch_size, num_tags, num_tags) where
+                # for each sample, entry at row i and column j stores the sum of scores of all
+                # possible tag sequences so far that end with transitioning from tag i to tag j
+                # and emitting
+                # shape: (batch_size, num_tags, num_tags)
+                    next_score = score[bs] + trans[next_tag,:] + broadcast_emissions
+                    alphas_t[0, next_tag] = torch.logsumexp(next_score, dim=-1).view(1)
+                    # if mask[i, bs] != False:
+                    #     score[i, next_tag] = alphas_t[0, next_tag]
+
+                next_score = alphas_t
+                # next_score = torch.logsumexp(next_score, dim=1)
 
             # Set score to the next score if this timestep is valid (mask == 1)
             # shape: (batch_size, num_tags)
-            score = torch.where(mask[i].unsqueeze(1), next_score, score)
+                if mask[i, bs] == True:
+                    score[bs] = next_score
 
+        value, _ = score.topk(self.beamsize, largest=True)
+        alpha = torch.logsumexp(value, dim=-1) + math.log(
+            num_tags / self.beamsize)
         # Sum (log-sum-exp) over all possible tags
         # shape: (batch_size,)
-        return torch.logsumexp(score, dim=1)
+        return alpha#torch.logsumexp(score, dim=1)
 
     def _viterbi_decode(self, emissions, full_road_emb, A_list, mask):
         """
