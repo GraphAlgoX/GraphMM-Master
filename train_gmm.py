@@ -45,14 +45,12 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         # loss = loss_fn(y_pred.view(-1, y_pred.shape[-1])[mask], tgt_roads.view(-1)[mask])
         train_l_sum += loss.item()
         count += 1
-        loss = loss / args['accumulation_steps']
         if count % 1 == 0:
             print(f"Iteration {count}: train_loss {loss.item()}")
+        optimizer.zero_grad()
         loss.backward()
-        if (idx + 1) % args['accumulation_steps'] == 0 or count == idx:
-            # nn.utils.clip_grad_norm_(model.parameters(), 5.)
-            optimizer.step()
-            optimizer.zero_grad()
+        nn.utils.clip_grad_norm_(model.parameters(), 5.)
+        optimizer.step()
     return train_l_sum / count
 
 
