@@ -161,44 +161,46 @@ class CRF(nn.Module):
         mask: (seq_length, batch_size)
         """
 
-        seq_length, batch_size = mask.shape
+        seq_length, batch_size, num_tags = emissions.shape
 
         # Start transition and first emission
         # shape: (batch_size, num_tags)
         score = emissions[0]
         history = []
 
-        # score is a tensor of size (batch_size, num_tags) where for every batch,
-        # value at column j stores the score of the best tag sequence so far that ends
-        # with tag j
-        # history saves where the best tags candidate transitioned from; this is used
-        # when we trace back the best tag sequence
+        trans = self.transitions(full_road_emb, A_list)
 
-        # Viterbi algorithm recursive case: we compute the score of the best tag sequence
-        # for every possible next tag
         for i in range(1, seq_length):
             # Broadcast viterbi score for every possible next tag
             # shape: (batch_size, num_tags, 1)
-            broadcast_score = score.unsqueeze(2)
+            # broadcast_score = score.unsqueeze(2)
 
             # Broadcast emission score for every possible current tag
             # shape: (batch_size, 1, num_tags)
-            broadcast_emission = emissions[i].unsqueeze(1)
+            # broadcast_emission = emissions[i].unsqueeze(1)
+            indices = torch.zeros(batch_size, num_tags).to(self.device)
+            for bs in range(batch_size):
+                alphas_t = (torch.ones(1, num_tags) * float('-inf')).to(self.device)
 
-            # Compute the score tensor of size (batch_size, num_tags, num_tags) where
-            # for each sample, entry at row i and column j stores the score of the best
-            # tag sequence so far that ends with transitioning from tag i to tag j and emitting
-            # shape: (batch_size, num_tags, num_tags)
-            next_score = broadcast_score + self.transitions(full_road_emb, A_list) + broadcast_emission
+                _, index = score[bs].topk(self.beamsize, largest=True)
+                next_tag_set = A_list[index.squeeze(0), :].sum(dim=0).nonzero().squeeze(1)
+                broadcast_emissions = emissions[i, bs, next_tag_set].unsqueeze(-1)
+                next_score = score[bs].unsqueeze(0) + trans[next_tag_set, :] + broadcast_emissions
+                alphas_t[0, next_tag_set] = torch.logsumexp(next_score, dim=-1)
+                next_score = alphas_t
+                # next_score = torch.logsumexp(next_score, dim=1)
 
-            # Find the maximum score over all possible current tag
+            # Set score to the next score if this timestep is valid (mask == 1)
             # shape: (batch_size, num_tags)
-            next_score, indices = next_score.max(dim=1)
+                if mask[i, bs] == True:
+                    score[bs] = next_score
+
+                next_score, indices[bs] = next_score.max(dim=1)
 
             # Set score to the next score if this timestep is valid (mask == 1)
             # and save the index that produces the next score
             # shape: (batch_size, num_tags)
-            score = torch.where(mask[i].unsqueeze(1), next_score, score)
+            # score = torch.where(mask[i].unsqueeze(1), next_score, score)
             history.append(indices)
 
         # Now, compute the best path for each sample
@@ -211,16 +213,19 @@ class CRF(nn.Module):
             # Find the tag which maximizes the score at the last timestep; this is our best tag
             # for the last timestep
             _, best_last_tag = score[idx].max(dim=0)
-            best_tags = [best_last_tag.item()]
+            best_tags = [int(best_last_tag.item())]
 
             # We trace back where the best last tag comes from, append that to our best tag
             # sequence, and trace it back again, and so on
             for hist in reversed(history[:seq_ends[idx]]):
                 best_last_tag = hist[idx][best_tags[-1]]
-                best_tags.append(best_last_tag.item())
+                best_tags.append(int(best_last_tag.item()))
 
             # Reverse the order because we start from the last timestep
             best_tags.reverse()
+            pad_lens = seq_length - len(best_tags)
+            for i in range(pad_lens):
+                best_tags.append(-1)
             best_tags_list.append(best_tags)
 
         return best_tags_list
