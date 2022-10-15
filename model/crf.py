@@ -15,7 +15,7 @@ class CRF(nn.Module):
         self.batch_first = batch_first
         self.device = device
         self.beam_size = beam_size
-        self.w = nn.Linear(emb_size, emb_size)
+        self.w = nn.Linear(emb_dim, emb_dim)
 
     def transition(self, tag1, tag2, full_road_emb, A_list):
         """
