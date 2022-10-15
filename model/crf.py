@@ -117,21 +117,22 @@ class CRF(nn.Module):
                 alphas_t = (torch.ones(1, num_tags) * float('-inf')).to(self.device)
                 _, index = score[bs].topk(self.beam_size, largest=True)
                 next_tag_set = A_list[index.squeeze(0), :].sum(dim=0).nonzero().squeeze(1)
-                broadcast_emissions = emissions[i, bs, next_tag_set].unsqueeze(-1)
-                next_score = score[bs].unsqueeze(0) + trans[next_tag_set, :] + broadcast_emissions
-                alphas_t[0, next_tag_set] = torch.logsumexp(next_score, dim=-1)
+                broadcast_emissions = emissions[i, bs, next_tag_set].unsqueeze(0)
+                # (num_tags, 1) + (num_tags, k) + (1, k), k = |next_tag_set|
+                next_score = score[bs].unsqueeze(1) + trans[:, next_tag_set] + broadcast_emissions
+                alphas_t[0, next_tag_set] = torch.logsumexp(next_score, dim=0)
                 next_score = alphas_t
 
                 # Set score to the next score if this timestep is valid (mask == 1)
                 # shape: (batch_size, num_tags)
                 if mask[i, bs] == True:
                     score[bs] = next_score
-
-        value, _ = score.topk(self.beam_size, largest=True)
-        alpha = torch.logsumexp(value, dim=-1) + math.log(num_tags / self.beam_size)
+        score[score == -float("inf")] = 0
+        # value, _ = score.topk(self.beam_size, largest=True)
+        # alpha = torch.logsumexp(value, dim=-1) + math.log(num_tags / self.beam_size)
         # Sum (log-sum-exp) over all possible tags
         # shape: (batch_size,)
-        return alpha
+        return torch.logsumexp(score, dim=1)
 
     def _viterbi_decode(self, emissions, full_road_emb, A_list, mask):
         """
@@ -162,9 +163,9 @@ class CRF(nn.Module):
 
                 _, index = score[bs].topk(self.beam_size, largest=True)
                 next_tag_set = A_list[index.squeeze(0), :].sum(dim=0).nonzero().squeeze(1)
-                broadcast_emissions = emissions[i, bs, next_tag_set].unsqueeze(-1)
-                next_score = score[bs].unsqueeze(0) + trans[next_tag_set, :] + broadcast_emissions
-                alphas_t[0, next_tag_set] = torch.logsumexp(next_score, dim=-1)
+                broadcast_emissions = emissions[i, bs, next_tag_set].unsqueeze(0)
+                next_score = score[bs].unsqueeze(1) + trans[:, next_tag_set] + broadcast_emissions
+                alphas_t[0, next_tag_set] = torch.logsumexp(next_score, dim=0)
                 next_score = alphas_t
                 # next_score = torch.logsumexp(next_score, dim=1)
 

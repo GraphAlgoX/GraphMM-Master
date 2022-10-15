@@ -20,7 +20,7 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
     model.train()
     train_l_sum, count = 0., 0
 
-    for data in train_iter:
+    for idx, data in enumerate(train_iter):
         # model.init_cache()
         # print('finish init!')
         grid_traces = data[0].to(device)
@@ -43,14 +43,16 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         # print(y_pred.shape, tgt_roads.shape)
         # mask = (tgt_roads.view(-1) != -1)
         # loss = loss_fn(y_pred.view(-1, y_pred.shape[-1])[mask], tgt_roads.view(-1)[mask])
+        loss = loss / args['accumulation_steps']
         train_l_sum += loss.item()
         count += 1
         if count % 1 == 0:
             print(f"Iteration {count}: train_loss {loss.item()}")
-        optimizer.zero_grad()
         loss.backward()
-        nn.utils.clip_grad_norm_(model.parameters(), 5.)
-        optimizer.step()
+        if (idx + 1) % args['accumulation_steps'] == 0 or count == idx:
+            # nn.utils.clip_grad_norm_(model.parameters(), 5.)
+            optimizer.step()
+            optimizer.zero_grad()
     return train_l_sum / count
 
 
