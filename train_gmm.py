@@ -43,9 +43,9 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         # print(y_pred.shape, tgt_roads.shape)
         # mask = (tgt_roads.view(-1) != -1)
         # loss = loss_fn(y_pred.view(-1, y_pred.shape[-1])[mask], tgt_roads.view(-1)[mask])
-        loss = loss / args['accumulation_steps']
         train_l_sum += loss.item()
         count += 1
+        loss = loss / args['accumulation_steps']
         if count % 1 == 0:
             print(f"Iteration {count}: train_loss {loss.item()}")
         loss.backward()
