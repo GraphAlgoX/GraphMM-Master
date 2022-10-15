@@ -116,8 +116,7 @@ class CRF(nn.Module):
 
             # broadcast_score = score.unsqueeze(2)
             for bs in range(batch_size):
-                alphas_t = (torch.ones(1, num_tags) * float('-inf')).to(
-                    self.device)
+                alphas_t = (torch.ones(1, num_tags) * float('-inf')).to(self.device)
 
                 _, index = score[bs].topk(self.beamsize, largest=True)
                 next_tag_set = A_list[index.squeeze(0), :].sum(dim=0).nonzero().squeeze(1)
@@ -147,8 +146,7 @@ class CRF(nn.Module):
                     score[bs] = next_score
 
         value, _ = score.topk(self.beamsize, largest=True)
-        alpha = torch.logsumexp(value, dim=-1) + math.log(
-            num_tags / self.beamsize)
+        alpha = torch.logsumexp(value, dim=-1) + math.log(num_tags / self.beamsize)
         # Sum (log-sum-exp) over all possible tags
         # shape: (batch_size,)
         return alpha#torch.logsumexp(score, dim=1)
@@ -187,8 +185,7 @@ class CRF(nn.Module):
             # for each sample, entry at row i and column j stores the score of the best
             # tag sequence so far that ends with transitioning from tag i to tag j and emitting
             # shape: (batch_size, num_tags, num_tags)
-            next_score = broadcast_score + self.transitions(
-                full_road_emb, A_list) + broadcast_emission
+            next_score = broadcast_score + self.transitions(full_road_emb, A_list) + broadcast_emission
 
             # Find the maximum score over all possible current tag
             # shape: (batch_size, num_tags)
