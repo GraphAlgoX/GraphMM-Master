@@ -9,19 +9,20 @@ class CRF(nn.Module):
     Conditional random field.
     """
 
-    def __init__(self, num_tags, device, batch_first=True, beamsize=5) -> None:
+    def __init__(self, num_tags, emb_dim, beam_size=5, device='cpu', batch_first=True) -> None:
         super().__init__()
         self.num_tags = num_tags
         self.batch_first = batch_first
         self.device = device
-        self.beamsize = beamsize
+        self.beam_size = beam_size
+        self.w = nn.Linear(emb_size, emb_size)
 
     def transition(self, tag1, tag2, full_road_emb, A_list):
         """
         tag1, tag2: (batch_size,)
         """
-        # (batch_size, 1, emb_dim)
-        emb1 = full_road_emb[tag1].unsqueeze(1)
+        # (batch_size, emb_dim)
+        emb1 = self.W(full_road_emb[tag1]).unsqueeze(1)
         # (batch_size, emb_dim, 1)
         emb2 = full_road_emb[tag2].unsqueeze(-1)
         # (batch_size, )
@@ -31,7 +32,7 @@ class CRF(nn.Module):
 
     def transitions(self, full_road_emb, A_list):
         # (num_tags, num_tags)
-        attention = full_road_emb @ full_road_emb.T
+        attention = full_road_emb @ full_road_emb.TT
         energy = A_list * attention
         return F.relu(energy)
 
@@ -118,7 +119,7 @@ class CRF(nn.Module):
             for bs in range(batch_size):
                 alphas_t = (torch.ones(1, num_tags) * float('-inf')).to(self.device)
 
-                _, index = score[bs].topk(self.beamsize, largest=True)
+                _, index = score[bs].topk(self.beam_size, largest=True)
                 next_tag_set = A_list[index.squeeze(0), :].sum(dim=0).nonzero().squeeze(1)
                 broadcast_emissions = emissions[i, bs, next_tag_set].unsqueeze(-1)
                 next_score = score[bs].unsqueeze(0) + trans[next_tag_set, :] + broadcast_emissions
@@ -149,8 +150,8 @@ class CRF(nn.Module):
                 if mask[i, bs] == True:
                     score[bs] = next_score
 
-        value, _ = score.topk(self.beamsize, largest=True)
-        alpha = torch.logsumexp(value, dim=-1) + math.log(num_tags / self.beamsize)
+        value, _ = score.topk(self.beam_size, largest=True)
+        alpha = torch.logsumexp(value, dim=-1) + math.log(num_tags / self.beam_size)
         # Sum (log-sum-exp) over all possible tags
         # shape: (batch_size,)
         return alpha#torch.logsumexp(score, dim=1)
@@ -182,7 +183,7 @@ class CRF(nn.Module):
             for bs in range(batch_size):
                 alphas_t = (torch.ones(1, num_tags) * float('-inf')).to(self.device)
 
-                _, index = score[bs].topk(self.beamsize, largest=True)
+                _, index = score[bs].topk(self.beam_size, largest=True)
                 next_tag_set = A_list[index.squeeze(0), :].sum(dim=0).nonzero().squeeze(1)
                 broadcast_emissions = emissions[i, bs, next_tag_set].unsqueeze(-1)
                 next_score = score[bs].unsqueeze(0) + trans[next_tag_set, :] + broadcast_emissions

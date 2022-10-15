@@ -75,7 +75,7 @@ class GMM(nn.Module):
         self.road_feat_fc = nn.Linear(28, emb_dim) # 3*8 + 4
         self.trace_feat_fc = nn.Linear(4, emb_dim)
         self.fc_input = nn.Linear(2*self.emb_dim+3, 2*self.emb_dim)
-        self.crf = CRF(self.target_size, self.device)
+        self.crf = CRF(num_tags=target_size,emb_dim=emb_dim, beam_size=beam_size, device=device)
         # self.feat_encoder = FeatureEncoder(4, loc_dim)
         # self.exp_fc_road = nn.Linear(4, 4 * loc_dim)
         # self.exp_fc_traj = nn.Linear(2, 4)
@@ -143,7 +143,7 @@ class GMM(nn.Module):
         for i in range(len(road_lens)):
             tgt_mask[i][:road_lens[i]] = 1.
         tgt_mask = tgt_mask.bool().to(self.device)
-        loss = -self.crf(emissions, tgt_roads, full_road_emb, gdata.A_list.squeeze(0), tgt_mask)
+        loss = -self.crf(emissions, tgt_roads, full_road_emb.detach(), gdata.A_list.squeeze(0), tgt_mask)
         return loss
 
     def infer(self, grid_traces, traces_gps, traces_lens, road_lens, sample_Idx, gdata,
