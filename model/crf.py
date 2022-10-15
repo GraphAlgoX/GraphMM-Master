@@ -32,7 +32,7 @@ class CRF(nn.Module):
 
     def transitions(self, full_road_emb, A_list):
         # (num_tags, num_tags)
-        attention = self.W(full_road_emb) @ full_road_emb.TT
+        attention = self.W(full_road_emb) @ full_road_emb.T
         energy = A_list * attention
         return F.relu(energy)
 
