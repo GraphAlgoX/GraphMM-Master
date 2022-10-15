@@ -15,7 +15,7 @@ class CRF(nn.Module):
         self.batch_first = batch_first
         self.device = device
         self.beam_size = beam_size
-        self.w = nn.Linear(emb_dim, emb_dim)
+        self.W = nn.Linear(emb_dim, emb_dim)
 
     def transition(self, tag1, tag2, full_road_emb, A_list):
         """
@@ -32,7 +32,7 @@ class CRF(nn.Module):
 
     def transitions(self, full_road_emb, A_list):
         # (num_tags, num_tags)
-        attention = full_road_emb @ full_road_emb.TT
+        attention = self.W(full_road_emb) @ full_road_emb.TT
         energy = A_list * attention
         return F.relu(energy)
 
