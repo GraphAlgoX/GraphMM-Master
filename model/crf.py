@@ -120,20 +120,24 @@ class CRF(nn.Module):
 
                 _, index = score[bs].topk(self.beamsize, largest=True)
                 next_tag_set = A_list[index.squeeze(0), :].sum(dim=0).nonzero().squeeze(1)
+                broadcast_emissions = emissions[i, bs, next_tag_set].unsqueeze(-1)
+                next_score = score[bs].unsqueeze(0) + trans[next_tag_set, :] + broadcast_emissions
+                alphas_t[0, next_tag_set] = torch.logsumexp(next_score, dim=-1)
 
-                for next_tag in next_tag_set:
+                # for next_tag in next_tag_set:
 
-                # Broadcast emission score for every possible current tag
-                # shape: (batch_size, 1, num_tags)
-                    broadcast_emissions = emissions[i,bs,next_tag].unsqueeze(-1)
+                #     # Broadcast emission score for every possible current tag
+                #     # shape: (batch_size, 1, num_tags)
+                #     broadcast_emissions = emissions[i,bs,next_tag].unsqueeze(-1)
 
-                # Compute the score tensor of size (batch_size, num_tags, num_tags) where
-                # for each sample, entry at row i and column j stores the sum of scores of all
-                # possible tag sequences so far that end with transitioning from tag i to tag j
-                # and emitting
-                # shape: (batch_size, num_tags, num_tags)
-                    next_score = score[bs] + trans[next_tag,:] + broadcast_emissions
-                    alphas_t[0, next_tag] = torch.logsumexp(next_score, dim=-1).view(1)
+                #     # Compute the score tensor of size (batch_size, num_tags, num_tags) where
+                #     # for each sample, entry at row i and column j stores the sum of scores of all
+                #     # possible tag sequences so far that end with transitioning from tag i to tag j
+                #     # and emitting
+                #     # shape: (batch_size, num_tags, num_tags)
+                #     print(score[bs].shape, trans[next_tag,:].shape)
+                #     next_score = score[bs] + trans[next_tag,:] + broadcast_emissions
+                #     alphas_t[0, next_tag] = torch.logsumexp(next_score, dim=-1).view(1)
                     # if mask[i, bs] != False:
                     #     score[i, next_tag] = alphas_t[0, next_tag]
 
