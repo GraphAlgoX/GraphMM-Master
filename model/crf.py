@@ -54,6 +54,7 @@ class CRF(nn.Module):
         # shape: (batch_size,)
         denominator = self._compute_normalizer(emissions, full_road_emb, A_list, mask)
         # shape: (batch_size,)
+        # S(X,y) - log(\sum_{\tilde{y} \in Y_X} e^{S(X, \tilde{y})})
         llh = numerator - denominator
         return llh.sum() / mask.float().sum()
 
@@ -112,41 +113,17 @@ class CRF(nn.Module):
         score = emissions[0]
         trans = self.transitions(full_road_emb, A_list)
         for i in range(1, seq_length):
-            # Broadcast score for every possible next tag
-            # shape: (batch_size, num_tags, 1)
-
-            # broadcast_score = score.unsqueeze(2)
             for bs in range(batch_size):
                 alphas_t = (torch.ones(1, num_tags) * float('-inf')).to(self.device)
-
                 _, index = score[bs].topk(self.beam_size, largest=True)
                 next_tag_set = A_list[index.squeeze(0), :].sum(dim=0).nonzero().squeeze(1)
                 broadcast_emissions = emissions[i, bs, next_tag_set].unsqueeze(-1)
                 next_score = score[bs].unsqueeze(0) + trans[next_tag_set, :] + broadcast_emissions
                 alphas_t[0, next_tag_set] = torch.logsumexp(next_score, dim=-1)
-
-                # for next_tag in next_tag_set:
-
-                #     # Broadcast emission score for every possible current tag
-                #     # shape: (batch_size, 1, num_tags)
-                #     broadcast_emissions = emissions[i,bs,next_tag].unsqueeze(-1)
-
-                #     # Compute the score tensor of size (batch_size, num_tags, num_tags) where
-                #     # for each sample, entry at row i and column j stores the sum of scores of all
-                #     # possible tag sequences so far that end with transitioning from tag i to tag j
-                #     # and emitting
-                #     # shape: (batch_size, num_tags, num_tags)
-                #     print(score[bs].shape, trans[next_tag,:].shape)
-                #     next_score = score[bs] + trans[next_tag,:] + broadcast_emissions
-                #     alphas_t[0, next_tag] = torch.logsumexp(next_score, dim=-1).view(1)
-                    # if mask[i, bs] != False:
-                    #     score[i, next_tag] = alphas_t[0, next_tag]
-
                 next_score = alphas_t
-                # next_score = torch.logsumexp(next_score, dim=1)
 
-            # Set score to the next score if this timestep is valid (mask == 1)
-            # shape: (batch_size, num_tags)
+                # Set score to the next score if this timestep is valid (mask == 1)
+                # shape: (batch_size, num_tags)
                 if mask[i, bs] == True:
                     score[bs] = next_score
 
@@ -154,7 +131,7 @@ class CRF(nn.Module):
         alpha = torch.logsumexp(value, dim=-1) + math.log(num_tags / self.beam_size)
         # Sum (log-sum-exp) over all possible tags
         # shape: (batch_size,)
-        return alpha#torch.logsumexp(score, dim=1)
+        return alpha
 
     def _viterbi_decode(self, emissions, full_road_emb, A_list, mask):
         """
