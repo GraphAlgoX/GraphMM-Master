@@ -75,7 +75,10 @@ class GMM(nn.Module):
         self.road_feat_fc = nn.Linear(28, emb_dim) # 3*8 + 4
         self.trace_feat_fc = nn.Linear(4, emb_dim)
         self.fc_input = nn.Linear(2*self.emb_dim+3, 2*self.emb_dim)
-        self.crf = CRF(num_tags=target_size,emb_dim=emb_dim, beam_size=beam_size, device=device)
+        self.crf = CRF(num_tags=target_size,
+                       emb_dim=emb_dim,
+                       beam_size=beam_size,
+                       device=device)
         # self.feat_encoder = FeatureEncoder(4, loc_dim)
         # self.exp_fc_road = nn.Linear(4, 4 * loc_dim)
         # self.exp_fc_traj = nn.Linear(2, 4)
