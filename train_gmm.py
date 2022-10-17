@@ -13,7 +13,6 @@ from tqdm import tqdm
 import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score
-# from torchviz import make_dot
 
 
 def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
@@ -47,7 +46,7 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         count += 1
         if count % 1 == 0:
             print(f"Iteration {count}: train_loss {loss.item()}")
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), 5.)
         optimizer.step()

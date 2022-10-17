@@ -6,7 +6,7 @@ from model.RoadGIN import RoadGIN
 from model.TraceGCNV1 import TraceGCN
 from model.seq2seqV1 import Seq2Seq
 from model.graphfilter import GraphFilter
-from model.crf import CRF
+from model.crfV1 import CRF
 import torch.nn.functional as F
 
 
