@@ -47,6 +47,7 @@ class CRF(nn.Module):
         Returns: 
             The log likelihood.
         """
+        batch_size = mask.size(0)
         if self.batch_first:
             emissions = emissions.transpose(0, 1)
             tags = tags.transpose(0, 1)
@@ -54,7 +55,7 @@ class CRF(nn.Module):
         # shape: (batch_size,)
         numerator = self._compute_score(emissions, tags, full_road_emb, A_list, mask)
         # shape: (batch_size,)
-        denominator = self._compute_normalizer(emissions, full_road_emb, A_list, mask)
+        denominator = self._compute_normalizer(emissions, full_road_emb, A_list, mask, numerator)
         # shape: (batch_size,)
         llh = numerator - denominator
         return llh.sum() / mask.float().sum()
@@ -100,7 +101,7 @@ class CRF(nn.Module):
 
         return score
 
-    def _compute_normalizer(self, emissions, full_road_emb, A_list, mask):
+    def _compute_normalizer(self, emissions, full_road_emb, A_list, mask, numerator):
         """
         emissions: (seq_length, batch_size, num_tags)
         mask: (seq_length, batch_size)
@@ -138,10 +139,10 @@ class CRF(nn.Module):
             # Set score to the next score if this timestep is valid (mask == 1)
             # shape: (batch_size, num_tags)
             score = torch.where(mask[i].unsqueeze(1), next_score, score)
-
+        score = torch.cat((score, numerator.reshape(-1, 1)), dim=1)
         # Sum (log-sum-exp) over all possible tags
         # shape: (batch_size,)
-        return torch.logsumexp(score, dim=1) + math.log(self.num_tags / self.neg_nums)
+        return torch.logsumexp(score, dim=1) + math.log(self.num_tags / (self.neg_nums + 1))
 
     def _viterbi_decode(self, emissions, full_road_emb, A_list, mask):
         """
