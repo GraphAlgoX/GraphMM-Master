@@ -141,7 +141,7 @@ class CRF(nn.Module):
 
         # Sum (log-sum-exp) over all possible tags
         # shape: (batch_size,)
-        return torch.logsumexp(score, dim=1) + math.log(self.num_tags / self.beam_size)
+        return torch.logsumexp(score, dim=1) + math.log(self.num_tags / self.neg_nums)
 
     def _viterbi_decode(self, emissions, full_road_emb, A_list, mask):
         """
