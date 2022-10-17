@@ -52,10 +52,16 @@ class CRF(nn.Module):
             emissions = emissions.transpose(0, 1)
             tags = tags.transpose(0, 1)
             mask = mask.transpose(0, 1)
+        seq_ends = mask.long().sum(dim=0) - 1
+        tag_ends, tag_seqs = [], []
+        for i in range(batch_size):
+            tag_ends.append(tags[seq_ends[i], i])
+            cur_gt = set(tags[:seq_ends[i] + 1,i].detach().cpu().numpy().tolist())
+            tag_seqs.append(cur_gt)
         # shape: (batch_size,)
         numerator = self._compute_score(emissions, tags, full_road_emb, A_list, mask)
         # shape: (batch_size,)
-        denominator = self._compute_normalizer(emissions, full_road_emb, A_list, mask, numerator)
+        denominator = self._compute_normalizer(emissions, full_road_emb, A_list, mask, tag_ends, tag_seqs, numerator)
         # shape: (batch_size,)
         llh = numerator - denominator
         return llh.sum() / mask.float().sum()
@@ -101,7 +107,7 @@ class CRF(nn.Module):
 
         return score
 
-    def _compute_normalizer(self, emissions, full_road_emb, A_list, mask, numerator):
+    def _compute_normalizer(self, emissions, full_road_emb, A_list, mask, tag_ends, tag_seqs, numerator):
         """
         emissions: (seq_length, batch_size, num_tags)
         mask: (seq_length, batch_size)
@@ -139,10 +145,21 @@ class CRF(nn.Module):
             # Set score to the next score if this timestep is valid (mask == 1)
             # shape: (batch_size, num_tags)
             score = torch.where(mask[i].unsqueeze(1), next_score, score)
-        score = torch.cat((score, numerator.reshape(-1, 1)), dim=1)
+        full_score = torch.full((batch_size, self.num_tags), float("-inf")).to(self.device)
+        full_score[:, neg_tag_sets] = score
+        neg_sets = set(neg_tag_sets)
+        for i in range(batch_size):
+            sdiff = tag_seqs[i] - neg_sets
+            if not sdiff:
+                continue
+            else:
+                if full_score[i, tag_ends[i]] == float("-inf"):
+                    full_score[i, tag_ends[i]] = numerator[i]
+                else:
+                    full_score[i, tag_ends[i]] += numerator[i]
         # Sum (log-sum-exp) over all possible tags
         # shape: (batch_size,)
-        return torch.logsumexp(score, dim=1) + math.log(self.num_tags / (self.neg_nums + 1))
+        return torch.logsumexp(full_score, dim=1) + math.log(self.num_tags / (self.neg_nums))
 
     def _viterbi_decode(self, emissions, full_road_emb, A_list, mask):
         """
