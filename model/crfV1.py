@@ -137,11 +137,11 @@ class CRF(nn.Module):
 
             # Set score to the next score if this timestep is valid (mask == 1)
             # shape: (batch_size, num_tags)
-            score = torch.where(mask[i].unsqueeze(1), next_score, score) + math.log(self.num_tags / self.beam_size)
+            score = torch.where(mask[i].unsqueeze(1), next_score, score)
 
         # Sum (log-sum-exp) over all possible tags
         # shape: (batch_size,)
-        return torch.logsumexp(score, dim=1)
+        return torch.logsumexp(score, dim=1) + math.log(self.num_tags / self.beam_size)
 
     def _viterbi_decode(self, emissions, full_road_emb, A_list, mask):
         """
@@ -167,8 +167,6 @@ class CRF(nn.Module):
         trans = self.transitions(full_road_emb, A_list)
         next_score = torch.zeros(batch_size, self.num_tags).to(self.device)
         indices = torch.zeros(batch_size, self.num_tags).int()
-        min_bk = 2
-        batch_len = batch_size // min_bk
         for i in range(1, seq_length):
             # Broadcast viterbi score for every possible next tag
             # shape: (batch_size, num_tags, 1)
@@ -183,23 +181,10 @@ class CRF(nn.Module):
             # tag sequence so far that ends with transitioning from tag i to tag j and emitting
             # shape: (batch_size, num_tags, num_tags)
             # next_score = broadcast_score + trans + broadcast_emission
-            for j in range(batch_len):
-                if j == batch_len - 1:
-                    broadcast_score = score[j*min_bk:, :].unsqueeze(2)
-                    broadcast_emission = emissions[i, j*min_bk:, :].unsqueeze(1)
-                    cur_score, cur_indices = torch.max(broadcast_score + trans + broadcast_emission, dim=1)
-                    next_score[j*min_bk:, ] = cur_score
-                    indices[j*min_bk:, ] = cur_indices.cpu()
-                else:
-                    broadcast_score = score[j*min_bk:(j+1)*min_bk, :].unsqueeze(2)
-                    broadcast_emission = emissions[i, j*min_bk:(j+1)*min_bk:, :].unsqueeze(1)
-                    cur_score, cur_indices = torch.max(broadcast_score + trans + broadcast_emission, dim=1)
-                    next_score[j*min_bk:(j+1)*min_bk, :] = cur_score
-                    indices[j*min_bk:(j+1)*min_bk, :] = cur_indices.cpu()
-            # for j in range(batch_size):
-            #     cur_score, cur_indices = torch.max(score[j].unsqueeze(1) + trans + emissions[i,j,:].unsqueeze(0), dim=0)
-            #     next_score[j] = cur_score
-            #     indices[j] = cur_indices.cpu()
+            for j in range(batch_size):
+                cur_score, cur_indices = torch.max(score[j].unsqueeze(1) + trans + emissions[i,j,:].unsqueeze(0), dim=0)
+                next_score[j] = cur_score
+                indices[j] = cur_indices.cpu()
             # Find the maximum score over all possible current tag
             # shape: (batch_size, num_tags)
             # next_score, indices = next_score.max(dim=1)

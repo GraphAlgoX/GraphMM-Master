@@ -28,7 +28,6 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         sample_Idx = data[3].to(device)
         traces_lens = torch.tensor(data[4])
         road_lens = torch.tensor(data[5])
-
         loss = model(grid_traces=grid_traces,
                     traces_gps=traces_gps,
                     traces_lens=traces_lens,
