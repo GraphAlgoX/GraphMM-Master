@@ -53,15 +53,19 @@ class CRF(nn.Module):
             tags = tags.transpose(0, 1)
             mask = mask.transpose(0, 1)
         seq_ends = mask.long().sum(dim=0) - 1
-        tag_ends, tag_seqs = [], []
+        neg_tag_sets = set()
         for i in range(batch_size):
-            tag_ends.append(tags[seq_ends[i], i])
-            cur_gt = set(tags[:seq_ends[i] + 1,i].detach().cpu().numpy().tolist())
-            tag_seqs.append(cur_gt)
+            neg_tag_sets |= set(tags[:seq_ends[i] + 1,i].detach().cpu().numpy().tolist())
+        assert len(neg_tag_sets) < self.neg_nums
+        remain_nums = self.neg_nums - len(neg_tag_sets)
+        if remain_nums > 0:
+            cand_set = [i for i in range(self.num_tags) if i not in neg_tag_sets]
+            neg_tag_sets |=  set(np.random.choice(cand_set, remain_nums, replace=False).tolist())
+        neg_tag_sets = sorted(list(neg_tag_sets))
         # shape: (batch_size,)
         numerator = self._compute_score(emissions, tags, full_road_emb, A_list, mask)
         # shape: (batch_size,)
-        denominator = self._compute_normalizer(emissions, full_road_emb, A_list, mask, tag_ends, tag_seqs, numerator)
+        denominator = self._compute_normalizer(emissions, full_road_emb, A_list, neg_tag_sets, mask)
         # shape: (batch_size,)
         llh = numerator - denominator
         return llh.sum() / mask.float().sum()
@@ -90,7 +94,6 @@ class CRF(nn.Module):
 
         seq_length, batch_size = tags.shape
         mask = mask.float()
-
         # Start transition score and first emission
         # shape: (batch_size,)
         score = torch.zeros(batch_size).to(self.device)
@@ -107,13 +110,12 @@ class CRF(nn.Module):
 
         return score
 
-    def _compute_normalizer(self, emissions, full_road_emb, A_list, mask, tag_ends, tag_seqs, numerator):
+    def _compute_normalizer(self, emissions, full_road_emb, A_list, neg_tag_sets, mask):
         """
         emissions: (seq_length, batch_size, num_tags)
         mask: (seq_length, batch_size)
         """
-        seq_length, batch_size = emissions.size(0), emissions.size(1)
-        neg_tag_sets = np.random.choice(self.num_tags, self.neg_nums, replace=False)
+        seq_length = emissions.size(0)
         # Start transition score and first emission; score has size of
         # (batch_size, num_tags) where for each batch, the j-th column stores
         # the score that the first timestep has tag j
@@ -145,22 +147,9 @@ class CRF(nn.Module):
             # Set score to the next score if this timestep is valid (mask == 1)
             # shape: (batch_size, num_tags)
             score = torch.where(mask[i].unsqueeze(1), next_score, score)
-        full_score = torch.full((batch_size, self.num_tags), float("-inf")).to(self.device)
-        full_score[:, neg_tag_sets] = score
-        neg_sets = set(neg_tag_sets)
-        for i in range(batch_size):
-            sdiff = tag_seqs[i] - neg_sets
-            if not sdiff:
-                continue
-            else:
-                if full_score[i, tag_ends[i]] == float("-inf"):
-                    full_score[i, tag_ends[i]] = numerator[i]
-                else:
-                    ts = torch.tensor([full_score[i, tag_ends[i]], numerator[i]])
-                    full_score[i, tag_ends[i]] =  torch.logsumexp(ts, dim=0)
         # # Sum (log-sum-exp) over all possible tags
         # shape: (batch_size,)
-        return torch.logsumexp(score, dim=1) + math.log(self.num_tags / self.neg_nums)
+        return torch.logsumexp(score, dim=1)
 
     def _viterbi_decode(self, emissions, full_road_emb, A_list, mask):
         """
