@@ -156,10 +156,11 @@ class CRF(nn.Module):
                 if full_score[i, tag_ends[i]] == float("-inf"):
                     full_score[i, tag_ends[i]] = numerator[i]
                 else:
-                    full_score[i, tag_ends[i]] += numerator[i]
-        # Sum (log-sum-exp) over all possible tags
+                    ts = torch.tensor([full_score[i, tag_ends[i]], numerator[i]])
+                    full_score[i, tag_ends[i]] =  torch.logsumexp(ts, dim=0)
+        # # Sum (log-sum-exp) over all possible tags
         # shape: (batch_size,)
-        return torch.logsumexp(full_score, dim=1) + math.log(self.num_tags / (self.neg_nums))
+        return torch.logsumexp(score, dim=1) + math.log(self.num_tags / self.neg_nums)
 
     def _viterbi_decode(self, emissions, full_road_emb, A_list, mask):
         """
