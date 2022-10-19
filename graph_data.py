@@ -3,12 +3,13 @@ import torch
 from torch_sparse import SparseTensor
 import numpy as np
 import pickle
+import os.path as osp
 
 
 class GraphData():
-    def __init__(self, parent_path, layer, device) -> None:
+    def __init__(self, root_path, layer, device) -> None:
         self.device = device
-        data_path = parent_path + 'data/'
+        data_path = osp.join(root_path, 'data/')
         # load trace graph and road graph
         # road_graph = nx.read_gml(data_path + 'road_graph.gml',
         #                          destringizer=int)
@@ -69,7 +70,7 @@ class GraphData():
         self.map_matrix = torch.load(trace_pt_path +
                                      'map_matrix.pt').to(device)
         # load map dictonary
-        pkl_path = parent_path + 'used_pkl/'
+        pkl_path = osp.join(root_path, 'used_pkl/')
         self.grid2traceid_dict = pickle.load(
             open(pkl_path + 'grid2traceid_dict.pkl', 'rb'))
         self.traceid2grid_dict = {

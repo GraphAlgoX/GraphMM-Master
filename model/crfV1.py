@@ -174,7 +174,7 @@ class CRF(nn.Module):
         # for every possible next tag
         trans = self.transitions(full_road_emb, A_list)
         next_score = torch.zeros(batch_size, self.num_tags).to(self.device)
-        indices = torch.zeros(batch_size, self.num_tags).int()
+        indices = torch.zeros(batch_size, self.num_tags).int().to(self.device)
         for i in range(1, seq_length):
             # Broadcast viterbi score for every possible next tag
             # shape: (batch_size, num_tags, 1)
@@ -192,7 +192,7 @@ class CRF(nn.Module):
             for j in range(batch_size):
                 cur_score, cur_indices = torch.max(score[j].unsqueeze(1) + trans + emissions[i,j,:].unsqueeze(0), dim=0)
                 next_score[j] = cur_score
-                indices[j] = cur_indices.cpu()
+                indices[j] = cur_indices
             # Find the maximum score over all possible current tag
             # shape: (batch_size, num_tags)
             # next_score, indices = next_score.max(dim=1)
