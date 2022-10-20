@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
-import math
 
 
 class CRF(nn.Module):
@@ -10,12 +8,11 @@ class CRF(nn.Module):
     Conditional random field.
     """
 
-    def __init__(self, num_tags, emb_dim, beam_size=5, neg_nums=500, device='cpu', batch_first=True) -> None:
+    def __init__(self, num_tags, emb_dim, neg_nums=500, device='cpu', batch_first=True) -> None:
         super().__init__()
         self.num_tags = num_tags
         self.batch_first = batch_first
         self.device = device
-        self.beam_size = beam_size
         self.neg_nums = neg_nums
         self.W = nn.Linear(emb_dim, emb_dim, bias=False)
 

@@ -1,13 +1,12 @@
 import networkx as nx
 import torch
 from torch_sparse import SparseTensor
-import numpy as np
 import pickle
 import os.path as osp
 
 
 class GraphData():
-    def __init__(self, root_path, layer, device) -> None:
+    def __init__(self, root_path, layer, gamma, device) -> None:
         self.device = device
         data_path = osp.join(root_path, 'data/')
         # load trace graph and road graph
@@ -39,30 +38,11 @@ class GraphData():
         #     sparse_sizes=(self.num_grids, self.num_grids)).to(device)
         # load initial features of road graph
         self.road_x = torch.load(road_pt_path + 'x.pt').to(device)
-        # road_x = torch.load(road_pt_path + 'x.pt')
-        # self.road_x = torch.randn(road_x.shape)
-        # for idx in range(road_x.shape[0]):
-        #     self.road_x[idx][0], self.road_x[idx][1] = \
-        #         gps2grid(float(road_x[idx][0]), float(road_x[idx][1]))
-        #     self.road_x[idx][2], self.road_x[idx][3] = \
-        #         gps2grid(float(road_x[idx][2]), float(road_x[idx][3]))
-        # self.road_x = self.road_x.to(device)
 
         self.singleton_grid_mask = torch.load(
             trace_pt_path + 'singleton_grid_mask.pt').to(device)
         self.singleton_grid_location = torch.load(
             trace_pt_path + 'singleton_grid_location.pt').to(device)
-        # singleton_grid_location = torch.load(
-        #     trace_pt_path + 'singleton_grid_location.pt').to(device)
-
-        # self.singleton_grid_location = torch.zeros(singleton_grid_location.shape)
-        # for idx in range(singleton_grid_location.shape[0]):
-        #     self.singleton_grid_location[idx][0], self.singleton_grid_location[idx][1] = \
-        #         gps2grid(float(singleton_grid_location[idx][0]), float(singleton_grid_location[idx][1]))
-        #     self.singleton_grid_location[idx][2], self.singleton_grid_location[idx][3] = \
-        #         gps2grid(float(singleton_grid_location[idx][2]), float(singleton_grid_location[idx][3]))
-
-        # self.singleton_grid_location = self.singleton_grid_location.to(device)
 
         self.map_matrix = torch.load(trace_pt_path +
                                      'map_matrix.pt').to(device)
@@ -75,11 +55,9 @@ class GraphData():
             for k, v in self.grid2traceid_dict.items()
         }
         # load f(A_R)
-        # A = torch.tensor(np.array(nx.adjacency_matrix(road_graph).todense()),
-        #                  dtype=torch.float)
         A = torch.load(data_path+'A.pt')
-        self.A_list = self.get_adj_poly(A, layer) 
         # A_list [1, n, n]
+        self.A_list = self.get_adj_poly(A, layer, gamma)
 
     def get_adj_poly_old(self, A, layer):
         nR = self.num_roads
@@ -91,12 +69,13 @@ class GraphData():
             A_list.append(lstA.clone())
         return torch.stack(A_list)
     
-    def get_adj_poly(self, A, layer):
+    def get_adj_poly(self, A, layer, gamma):
         A_ = (A + torch.eye(self.num_roads)).to(self.device)
         ans = A_.clone()
         for _ in range(layer-1):
             ans = ans@A_
-        ans[ans!=0] = 1.
+        ans[ans != 0] = 1.
+        ans[ans == 0] = -gamma
         return ans.unsqueeze(0)
 
 
