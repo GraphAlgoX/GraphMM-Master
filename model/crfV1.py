@@ -65,7 +65,9 @@ class CRF(nn.Module):
         # shape: (batch_size,)
         numerator = self._compute_score(emissions, tags, full_road_emb, A_list, mask)
         # shape: (batch_size,)
-        denominator = self._compute_normalizer(emissions, full_road_emb, A_list, neg_tag_sets, mask)
+        trans = self.transitions(full_road_emb, A_list)[neg_tag_sets, :]
+        trans = trans[:, neg_tag_sets]
+        denominator = self._compute_normalizer(emissions, trans, neg_tag_sets, mask)
         # shape: (batch_size,)
         llh = numerator - denominator
         return llh.sum() / mask.float().sum()
@@ -81,7 +83,8 @@ class CRF(nn.Module):
         if self.batch_first:
             emissions = emissions.transpose(0, 1)
             mask = mask.transpose(0, 1)
-        return self._viterbi_decode(emissions, full_road_emb, A_list, mask)
+        trans = self.transitions(full_road_emb, A_list)
+        return self._viterbi_decode(emissions, trans, mask)
 
     def _compute_score(self, emissions, tags, full_road_emb, A_list, mask):
         """
@@ -110,10 +113,11 @@ class CRF(nn.Module):
 
         return score
 
-    def _compute_normalizer(self, emissions, full_road_emb, A_list, neg_tag_sets, mask):
+    def _compute_normalizer(self, emissions, trans, neg_tag_sets, mask):
         """
         emissions: (seq_length, batch_size, num_tags)
         mask: (seq_length, batch_size)
+        trans: (k, k), k = |neg_tag_sets|
         """
         seq_length = emissions.size(0)
         # Start transition score and first emission; score has size of
@@ -121,8 +125,6 @@ class CRF(nn.Module):
         # the score that the first timestep has tag j
         # shape: (batch_size, num_tags)
         score = emissions[0, :, neg_tag_sets]
-        trans = self.transitions(full_road_emb, A_list)[neg_tag_sets, :]
-        trans = trans[:, neg_tag_sets]
         for i in range(1, seq_length):
             # Broadcast score for every possible next tag
             # shape: (batch_size, num_tags, 1)
@@ -151,10 +153,11 @@ class CRF(nn.Module):
         # shape: (batch_size,)
         return torch.logsumexp(score, dim=1)
 
-    def _viterbi_decode(self, emissions, full_road_emb, A_list, mask):
+    def _viterbi_decode(self, emissions, trans, mask):
         """
         emissions: (seq_length, batch_size, num_tags)
         mask: (seq_length, batch_size)
+        trans: (num_tags, num_tags)
         """
 
         seq_length, batch_size = mask.shape
@@ -172,9 +175,8 @@ class CRF(nn.Module):
 
         # Viterbi algorithm recursive case: we compute the score of the best tag sequence
         # for every possible next tag
-        trans = self.transitions(full_road_emb, A_list)
         next_score = torch.zeros(batch_size, self.num_tags).to(self.device)
-        indices = torch.zeros(batch_size, self.num_tags).int().to(self.device)
+        indices = torch.zeros(batch_size, self.num_tags).int()
         for i in range(1, seq_length):
             # Broadcast viterbi score for every possible next tag
             # shape: (batch_size, num_tags, 1)
@@ -192,7 +194,7 @@ class CRF(nn.Module):
             for j in range(batch_size):
                 cur_score, cur_indices = torch.max(score[j].unsqueeze(1) + trans + emissions[i,j,:].unsqueeze(0), dim=0)
                 next_score[j] = cur_score
-                indices[j] = cur_indices
+                indices[j] = cur_indices.detach().cpu()
             # Find the maximum score over all possible current tag
             # shape: (batch_size, num_tags)
             # next_score, indices = next_score.max(dim=1)
