@@ -53,6 +53,7 @@ class GMM(nn.Module):
                  emb_dim,
                  device,
                  target_size,
+                 topn,
                  atten_flag=True,
                  drop_prob=0.5,
                  bi=True) -> None:
@@ -75,6 +76,7 @@ class GMM(nn.Module):
         self.fc_input = nn.Linear(2*self.emb_dim+3, 2*self.emb_dim)
         self.crf = CRF(num_tags=target_size,
                        emb_dim=emb_dim,
+                       topn=topn,
                        device=device)
         # self.feat_encoder = FeatureEncoder(4, loc_dim)
         # self.exp_fc_road = nn.Linear(4, 4 * loc_dim)

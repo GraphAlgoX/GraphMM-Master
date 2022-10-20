@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import torch.nn.functional as F
 
 
 class CRF(nn.Module):
@@ -8,11 +9,12 @@ class CRF(nn.Module):
     Conditional random field.
     """
 
-    def __init__(self, num_tags, emb_dim, neg_nums=500, device='cpu', batch_first=True) -> None:
+    def __init__(self, num_tags, emb_dim, topn, neg_nums=500, device='cpu', batch_first=True) -> None:
         super().__init__()
         self.num_tags = num_tags
         self.batch_first = batch_first
         self.device = device
+        self.topn = topn
         self.neg_nums = neg_nums
         self.W = nn.Linear(emb_dim, emb_dim, bias=False)
 
@@ -25,14 +27,14 @@ class CRF(nn.Module):
         # (batch_size, emb_dim, 1)
         emb2 = full_road_emb[tag2].unsqueeze(-1)
         # (batch_size, )
-        r = torch.sigmoid(torch.bmm(emb1, emb2)).squeeze()
+        r = F.relu(torch.bmm(emb1, emb2)).squeeze()
         energy = A_list[tag1, tag2] * r
         return energy
 
     def transitions(self, full_road_emb, A_list):
         # (num_tags, num_tags)
         attention = self.W(full_road_emb) @ full_road_emb.T
-        energy = A_list *  torch.sigmoid(attention)
+        energy = A_list *  F.relu(attention)
         return energy
 
     def forward(self, emissions, tags, full_road_emb, A_list, mask):
@@ -159,9 +161,17 @@ class CRF(nn.Module):
 
         seq_length, batch_size = mask.shape
 
+        # gain topk
+        _, indices = torch.topk(emissions, dim=-1, k=50)
+        tag_sets = indices.flatten().unique().detach().cpu().numpy().tolist()
+        tag_sets = sorted(tag_sets)
+        tag_map = {i:tag for i, tag in enumerate(tag_sets)}
+        # gain sub transition prob matrix
+        trans = trans[tag_sets, :]
+        trans = trans[:, tag_sets]
         # Start transition and first emission
-        # shape: (batch_size, num_tags)
-        score = emissions[0]
+        # shape: (batch_size, k)
+        score = emissions[0, :, tag_sets]
         history = []
 
         # score is a tensor of size (batch_size, num_tags) where for every batch,
@@ -176,17 +186,17 @@ class CRF(nn.Module):
         # indices = torch.zeros(batch_size, self.num_tags).int()
         for i in range(1, seq_length):
             # Broadcast viterbi score for every possible next tag
-            # shape: (batch_size, num_tags, 1)
+            # shape: (batch_size, k, 1)
             broadcast_score = score.unsqueeze(2)
 
             # Broadcast emission score for every possible current tag
-            # shape: (batch_size, 1, num_tags)
-            broadcast_emission = emissions[i].unsqueeze(1)
+            # shape: (batch_size, 1, k)
+            broadcast_emission = emissions[i, :, tag_sets].unsqueeze(1)
 
             # Compute the score tensor of size (batch_size, num_tags, num_tags) where
             # for each sample, entry at row i and column j stores the score of the best
             # tag sequence so far that ends with transitioning from tag i to tag j and emitting
-            # shape: (batch_size, num_tags, num_tags)
+            # shape: (batch_size, k, k)
             next_score = broadcast_score + trans + broadcast_emission
             # for j in range(batch_size):
             #     cur_score, cur_indices = torch.max(score[j].unsqueeze(1) + trans + emissions[i,j,:].unsqueeze(0), dim=0)
@@ -212,7 +222,6 @@ class CRF(nn.Module):
             # for the last timestep
             _, best_last_tag = score[idx].max(dim=0)
             best_tags = [best_last_tag.item()]
-
             # We trace back where the best last tag comes from, append that to our best tag
             # sequence, and trace it back again, and so on
             for hist in reversed(history[:seq_ends[idx]]):
@@ -221,6 +230,7 @@ class CRF(nn.Module):
 
             # Reverse the order because we start from the last timestep
             best_tags.reverse()
+            best_tags = [tag_map[t] for t in best_tags]
             tags_len = len(best_tags)
             best_tags_list.append(best_tags + [-1] * (seq_length - tags_len))
         return best_tags_list

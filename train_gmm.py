@@ -117,7 +117,7 @@ def main(args):
     print('get graph extra data finished!')
     model = GMM(emb_dim=args['emb_dim'],
                 target_size=gdata.num_roads,
-                beam_size=args['beam_size'],
+                topn=args['topn'],
                 device=device,
                 atten_flag=args['atten_flag'],
                 drop_prob=args['drop_prob'])
