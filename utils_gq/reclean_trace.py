@@ -72,6 +72,8 @@ def clean(tmpLs, file):
     finalLs = []
     print(len(tmpLs))
     for traces in tmpLs:
+        if len(traces) < 16:
+            continue
         tmp_traces = traces.copy()
         grid_set = set()
         add = True
@@ -103,7 +105,7 @@ def clean(tmpLs, file):
                 f.write(trace)
 
 
-data_path = '/data/GeQian/g2s_2/data_for_GMM-Master/data/'
+data_path = '/data/GeQian/g2s_2/gmm_data/data/'
 get_border(data_path+'pure_data/newroad.txt')
 # print('MIN_LAT=', MIN_LAT)
 # print('MAX_LAT=', MAX_LAT)
@@ -114,5 +116,5 @@ get_border(data_path+'pure_data/newroad.txt')
 if __name__ == "__main__":
     # 40.058076, 116.338461
     # 85,130
-    tmpLs = readTrajFile('/data/GeQian/g2s_2/data_for_GMM-Master/data/pure_data/full_trace_new.txt')
-    clean(tmpLs, '/data/GeQian/g2s_2/data_for_GMM-Master/data/pure_data/full_trace_new.txt')
+    tmpLs = readTrajFile('/data/GeQian/g2s_2/gmm_data/data/pure_data/full_trace_new.txt')
+    clean(tmpLs, '/data/GeQian/g2s_2/gmm_data/data/pure_data/full_trace_new.txt')

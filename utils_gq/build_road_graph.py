@@ -190,7 +190,7 @@ def build_x_edge_index(G):
 
 
 if __name__ == '__main__':
-    data_path = '/data/GeQian/g2s_2/data_for_GMM-Master/data/'
+    data_path = '/data/GeQian/g2s_2/gmm_data/data/'
     g = pickle.load(open(data_path+'peeling_data/newnG.pkl','rb'))
     # r = read_road(data_path+'pure_data/newroad.txt')
     # ng = construct_road_graph(r)

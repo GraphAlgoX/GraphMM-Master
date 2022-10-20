@@ -15,7 +15,7 @@ EARTH_MEAN_RADIUS_METER = 6371008.7714
 DEG_TO_KM = DEGREES_TO_RADIANS * EARTH_MEAN_RADIUS_METER
 LAT_PER_METER = 8.993203677616966e-06
 LNG_PER_METER = 1.1700193970443768e-05
-data_path = '/data/GeQian/g2s_2/data_for_GMM-Master/data/'
+data_path = '/data/GeQian/g2s_2/gmm_data/data/'
 
 def gps2grid(lat, lng):
     lat_per_meter = 8.993203677616966e-06

@@ -29,8 +29,8 @@ def randomDownSampleBySize(sampleData: list, sampleRate: float,
         tempRes.append(trajList[-1])  # 尾节点
         tmpIdx.append(len(trajList) - 2)
         # ignore short traj
-        # if (len(tempRes) < threshold):
-        #     continue
+        if (len(tempRes) < threshold):
+            continue
         resData.append(tempRes)
         pureData.append(trajList)
         resIdx.append(tmpIdx)
@@ -61,7 +61,6 @@ class DataProcess():
     def __init__(self, traj_input_path, output_dir, threshold,
                  sample_rate, max_road_len=25, min_road_len=15) -> None:
         self.traj_input_path = traj_input_path
-        self.output_dir = output_dir
         self.threshold = threshold
         self.sample_rate = sample_rate
         self.max_road_len = max_road_len
@@ -69,12 +68,9 @@ class DataProcess():
         beginLs = self.readTrajFile(traj_input_path)
         # self.max_road_len = self.getSuitableCut(beginLs)
         self.finalLs = self.cutData(beginLs)
-        self.traces_ls, self.roads_ls, self.downsampleIdx, downSampleData = self.sampling()
-        self.splitData(output_dir)
-        with open(self.output_dir + 'data_for_mtraj/downsample_trace.txt', 'w') as f:
-            for traces in downSampleData:
-                for trace in traces:
-                    f.write(trace)
+        # self.write_cut_data()
+        # self.traces_ls, self.roads_ls, self.downsampleIdx = self.sampling()
+        # self.splitData(output_dir)
 
     def readTrajFile(self, filePath):
         full_lens = 0
@@ -126,7 +122,7 @@ class DataProcess():
                 roads.append(int(i.split(',')[3]))
             traces_ls.append(traces)
             roads_ls.append(roads)
-        return traces_ls, roads_ls, downsampleIdx, downsampleData
+        return traces_ls, roads_ls, downsampleIdx
 
     def cutData(self, beginLs): 
         # each trace [min_lens+1, max_lens+min_lens+1) 
@@ -162,6 +158,12 @@ class DataProcess():
 
         for i in finalLs:
             assert(len(i) >= 16 and len(i) <= 40)
+
+        with open('/data/GeQian/g2s2hx/final_trace_after_cut.txt', 'w') as f:
+            for traces in finalLs:
+                for i in traces:
+                    f.write(i)
+
         return finalLs
 
     def splitData(self, output_dir, train_rate=0.7, val_rate=0.1):
@@ -169,7 +171,6 @@ class DataProcess():
         split original data to train, valid and test datasets
         """
         create_dir(output_dir)
-        create_dir(output_dir + 'data_for_mtraj/')
         train_data_dir = output_dir + 'train_data/'
         create_dir(train_data_dir)
         val_data_dir = output_dir + 'val_data/'
@@ -184,21 +185,13 @@ class DataProcess():
         train_idxs = idxs[:train_size]
         val_idxs = idxs[train_size:train_size + val_size]
         trainset, valset, testset = [], [], []
-
-        train_trace = []
-        val_trace = []
-        test_trace = []
-
         for i in range(num_sample):
             if i in train_idxs:
                 trainset.extend([self.traces_ls[i], self.roads_ls[i], self.downsampleIdx[i]])
-                train_trace += [self.finalLs[i]]
             elif i in val_idxs:
                 valset.extend([self.traces_ls[i], self.roads_ls[i], self.downsampleIdx[i]])
-                val_trace += [self.finalLs[i]]
             else:
                 testset.extend([self.traces_ls[i], self.roads_ls[i], self.downsampleIdx[i]])
-                test_trace += [self.finalLs[i]]
 
         with open(os.path.join(train_data_dir, "train.json"), 'w') as fp:
             json.dump(trainset, fp)
@@ -209,21 +202,9 @@ class DataProcess():
         with open(os.path.join(test_data_dir, "test.json"), 'w') as fp:
             json.dump(testset, fp)
 
-        all_trace = [train_trace, val_trace, test_trace]
-        all_trace_name = ['train_trace.txt', 'val_trace.txt', 'test_trace.txt']
-        for i in range(3):
-            tmptrace = all_trace[i]
-            path = output_dir + 'data_for_mtraj/' + all_trace_name[i]
-            with open(path, 'w') as f:
-                for traces in tmptrace:
-                    for trace in traces:
-                        f.write(trace)
-
-
-
 
 if __name__ == "__main__":
-    DataProcess(traj_input_path='/data/GeQian/g2s_2/gmm_data/data/pure_data/full_trace_new.txt', \
-        output_dir='/data/GeQian/g2s_2/gmm_data/data/', threshold=4, sample_rate=0.5)
+    DataProcess(traj_input_path='/data/GeQian/g2s_2/data_for_GMM-Master/data/pure_data/full_trace_new.txt', \
+        output_dir='/data/GeQian/g2s_2/data_for_GMM-Master/data/', threshold=4, sample_rate=0.5)
     pass
 

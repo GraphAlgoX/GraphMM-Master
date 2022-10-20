@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import Dataset  # Dataset是个抽象类，只能用于继承
 from torch.utils.data import DataLoader # DataLoader需实例化，用于加载数据
 
-data_path = '/data/GeQian/g2s_2/data_for_GMM-Master/data/'
+data_path = '/data/GeQian/g2s_2/gmm_data/data/'
 
 class MyDataset(Dataset):   # 继承Dataset类
     def __init__(self, traces_ls, roads_ls): 
@@ -51,7 +51,7 @@ def randomDownSampleBySize(sampleData: list, sampleRate : float, threshold: int)
         pureData.append(trajList)
     return resData, pureData
 # 均匀下采样
-def avgDownSampleBySize(sampleData: list, sampleGap : int=15, threshold: int=4) -> list:
+def avgDownSampleBySize(sampleData: list, sampleGap : int=15, threshold: int=16) -> list:
     resData = list()
     for i in range(len(sampleData)):
         trajList = sampleData[i]
@@ -60,7 +60,8 @@ def avgDownSampleBySize(sampleData: list, sampleGap : int=15, threshold: int=4) 
             if (j % sampleGap == 0):
                 tempRes.append(trajList[j])
         # 长度过于短的忽略
-        if (len(tempRes) < threshold): continue
+        if (len(tempRes) < threshold): 
+            continue
         resData.append(tempRes)
     return resData
 
@@ -97,16 +98,16 @@ def readTrajFile(filePath, threshold=4):
 if __name__ == "__main__":
     
     # 设置阈值，将过短的轨迹删除掉
-    threshold = 4
+    threshold = 16
 
     # # 未清洗的未合并轨迹数据
     # old_full_trace_path = '/data/GeQian/g2s_2/preprocessed_pure/full_trace.txt'
     # # 清洗的未合并轨迹数据(clean data)
     # old_clean_full_trace_path = './clean_full_trace.txt'
     # 未清洗的合并的轨迹数据
-    new_full_trace_path = '/data/GeQian/g2s_2/data_for_GMM-Master/data/pure_data/full_trace_new.txt'
+    new_full_trace_path = '/data/GeQian/g2s_2/gmm_data/data/pure_data/full_trace_new.txt'
     # 清洗的合并的轨迹数据
-    new_clean_full_trace_path = '/data/GeQian/g2s_2/data_for_GMM-Master/data/pure_data/clean_full_trace_new.txt'
+    new_clean_full_trace_path = '/data/GeQian/g2s_2/gmm_data/data/pure_data/clean_full_trace_new.txt'
 
 
     # 从文件中读取数据
@@ -116,7 +117,7 @@ if __name__ == "__main__":
     print("===========   END   ===========\n")
 
     print("读取数据完毕, 先进行均匀下采样")
-    finalLs = avgDownSampleBySize(finalLs, 15, 4)
+    finalLs = avgDownSampleBySize(finalLs, 15, threshold)
     print("===========均匀采样后数据长度===========")
     drawLengthDist(finalLs)
     print("===========   END   ===========\n")
