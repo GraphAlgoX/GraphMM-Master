@@ -13,9 +13,9 @@ class GCNLayer(nn.Module):
                                add_self_loops=False,
                                bias=bias)
 
-    def forward(self, x, adj_t, edge_weight):
+    def forward(self, x, edge_index, edge_weight):
         hl = self.linear(x)
-        hr = self.gcnconv(x, adj_t, edge_weight)
+        hr = self.gcnconv(x, edge_index, edge_weight)
         return hl + hr
 
 
@@ -29,9 +29,9 @@ class DiGCN(nn.Module):
             self.convs.append(GCNLayer(embed_dim, embed_dim))
             self.bns.append(nn.BatchNorm1d(embed_dim))
 
-    def forward(self, x, adj_t, edge_weight):
+    def forward(self, x, edge_index, edge_weight):
         for idx in range(self.depth):
-            x = self.convs[idx](x, adj_t, edge_weight)
+            x = self.convs[idx](x, edge_index, edge_weight)
             x = self.bns[idx](x)
             if idx != self.depth - 1:
                 x = F.relu(x)
@@ -45,9 +45,9 @@ class TraceGCN(torch.nn.Module):
         self.gcn1 = DiGCN(self.emb_dim)
         self.gcn2 = DiGCN(self.emb_dim)
 
-    def forward(self, feats, in_adj_t, out_adj_t, edge_weight):
-        emb_ind = self.gcn1(feats, in_adj_t, edge_weight)
-        emb_oud = self.gcn2(feats, out_adj_t, edge_weight)
+    def forward(self, feats, in_edge_index, out_edge_index, edge_weight):
+        emb_ind = self.gcn1(feats, in_edge_index, edge_weight)
+        emb_oud = self.gcn2(feats, out_edge_index, edge_weight)
         ans = torch.cat([emb_ind, emb_oud], 1)
         return ans
 

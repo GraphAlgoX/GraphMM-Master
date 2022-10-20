@@ -13,6 +13,7 @@ from tqdm import tqdm
 import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score
+import os.path as osp
 
 
 def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
@@ -29,13 +30,13 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         traces_lens = torch.tensor(data[4])
         road_lens = torch.tensor(data[5])
         loss = model(grid_traces=grid_traces,
-                    traces_gps=traces_gps,
-                    traces_lens=traces_lens,
-                    road_lens=road_lens,
-                    tgt_roads=tgt_roads,
-                    gdata=gdata,
-                    sample_Idx=sample_Idx,
-                    tf_ratio=args['tf_ratio'])
+                     traces_gps=traces_gps,
+                     traces_lens=traces_lens,
+                     road_lens=road_lens,
+                     tgt_roads=tgt_roads,
+                     gdata=gdata,
+                     sample_Idx=sample_Idx,
+                     tf_ratio=args['tf_ratio'])
         # g = make_dot(y_pred, params=dict(model.named_parameters()))
         # g.render('gmm', view=False)
         # print(y_pred.shape, tgt_roads.shape)
@@ -89,9 +90,10 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
 
 
 def main(args):
-    save_path = "ckpt/bz{}_lr{}_ep{}_edim{}_att{}_dp{}_best_gclip.pt".format(
-        args['batch_size'], args['lr'], args['epochs'], args['emb_dim'], args['atten_flag'], args['drop_prob'])
-    root_path = args['parent_path']
+    save_path = "{}/ckpt/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_best.pt".format(
+        args['parent_path'], args['batch_size'], args['lr'], args['epochs'], 
+        args['emb_dim'], args['drop_prob'], args['tf_ratio'])
+    root_path = osp.join(args['parent_path'], 'gmm-data')
     trainset = MyDataset(root_path, "train")
     valset = MyDataset(root_path, "val")
     testset = MyDataset(root_path, "test")
@@ -100,17 +102,17 @@ def main(args):
                             shuffle=True,
                             collate_fn=padding)
     val_iter = DataLoader(dataset=valset,
-                          batch_size=512,
+                          batch_size=args['eval_bsize'],
                           collate_fn=padding)
     test_iter = DataLoader(dataset=testset,
-                           batch_size=512,
+                           batch_size=args['eval_bsize'],
                            collate_fn=padding)
     print("Loading Dataset Done!!!")
     # args['dev_id'] = 1 if args['use_gcn'] else 0
     device = torch.device(f"cuda:{args['dev_id']}" if torch.cuda.is_available() else "cpu")
-
-    gdata = GraphData(parent_path=args['parent_path'],
+    gdata = GraphData(root_path=root_path,
                       layer=args['layer'],
+                      gamma=args['gamma'],
                       device=device)
     print('get graph extra data finished!')
     model = GMM(emb_dim=args['emb_dim'],
@@ -120,7 +122,6 @@ def main(args):
                 atten_flag=args['atten_flag'],
                 drop_prob=args['drop_prob'])
     model = model.to(device)
-    # model.init_cache()
     best_acc = 0.
     print("Loading model Done!!!")
     loss_fn = nn.CrossEntropyLoss()
@@ -135,8 +136,8 @@ def main(args):
         if best_acc <= val_avg_acc:
             best_acc = val_avg_acc
             torch.save(model.state_dict(), save_path)
-        print("Epoch {}: train_avg_loss {} eval_avg_acc: {} eval_avg_r {} eval_avg_p {}"
-            .format(e + 1, train_avg_loss, val_avg_acc, val_avg_r, val_avg_p))
+        print("Epoch {}: train_avg_loss {} eval_avg_acc: {} eval_avg_r {} eval_avg_p {}".format(
+            e + 1, train_avg_loss, val_avg_acc, val_avg_r, val_avg_p))
         nni.report_intermediate_result(val_avg_acc)
 
     model.load_state_dict(torch.load(save_path))
@@ -150,8 +151,11 @@ def main(args):
 if __name__ == "__main__":
     try:
         tuner_params = nni.get_next_parameter()
-        if tuner_params and tuner_params['tf_ratio'] == 0:
-            tuner_params['tf_ratio'] = 0.0
+        if tuner_params:
+            if tuner_params['tf_ratio'] == 0:
+                tuner_params['tf_ratio'] = 0.0
+            if tuner_params['drop_prob'] == 0:
+                tuner_params['drop_prob'] = 0.0
         params = vars(merge_parameter(get_params(), tuner_params))
         print(params)
         main(params)
