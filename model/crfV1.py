@@ -17,7 +17,7 @@ class CRF(nn.Module):
         self.device = device
         self.beam_size = beam_size
         self.neg_nums = neg_nums
-        self.W = nn.Linear(emb_dim, emb_dim)
+        self.W = nn.Linear(emb_dim, emb_dim, bias=False)
 
     def transition(self, tag1, tag2, full_road_emb, A_list):
         """
