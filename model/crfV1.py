@@ -28,14 +28,14 @@ class CRF(nn.Module):
         # (batch_size, emb_dim, 1)
         emb2 = full_road_emb[tag2].unsqueeze(-1)
         # (batch_size, )
-        r = F.relu(torch.bmm(emb1, emb2)).squeeze()
+        r = torch.sigmoid(torch.bmm(emb1, emb2)).squeeze()
         energy = A_list[tag1, tag2] * r
-        return energy.flatten()
+        return energy
 
     def transitions(self, full_road_emb, A_list):
         # (num_tags, num_tags)
         attention = self.W(full_road_emb) @ full_road_emb.T
-        energy = A_list * F.relu(attention)
+        energy = A_list *  torch.sigmoid(attention)
         return energy
 
     def forward(self, emissions, tags, full_road_emb, A_list, mask):
@@ -175,36 +175,36 @@ class CRF(nn.Module):
 
         # Viterbi algorithm recursive case: we compute the score of the best tag sequence
         # for every possible next tag
-        next_score = torch.zeros(batch_size, self.num_tags).to(self.device)
-        indices = torch.zeros(batch_size, self.num_tags).int()
+        # next_score = torch.zeros(batch_size, self.num_tags).to(self.device)
+        # indices = torch.zeros(batch_size, self.num_tags).int()
         for i in range(1, seq_length):
             # Broadcast viterbi score for every possible next tag
             # shape: (batch_size, num_tags, 1)
-            # broadcast_score = score.unsqueeze(2)
+            broadcast_score = score.unsqueeze(2)
 
             # Broadcast emission score for every possible current tag
             # shape: (batch_size, 1, num_tags)
-            # broadcast_emission = emissions[i].unsqueeze(1)
+            broadcast_emission = emissions[i].unsqueeze(1)
 
             # Compute the score tensor of size (batch_size, num_tags, num_tags) where
             # for each sample, entry at row i and column j stores the score of the best
             # tag sequence so far that ends with transitioning from tag i to tag j and emitting
             # shape: (batch_size, num_tags, num_tags)
-            # next_score = broadcast_score + trans + broadcast_emission
-            for j in range(batch_size):
-                cur_score, cur_indices = torch.max(score[j].unsqueeze(1) + trans + emissions[i,j,:].unsqueeze(0), dim=0)
-                next_score[j] = cur_score
-                indices[j] = cur_indices.detach().cpu()
+            next_score = broadcast_score + trans + broadcast_emission
+            # for j in range(batch_size):
+            #     cur_score, cur_indices = torch.max(score[j].unsqueeze(1) + trans + emissions[i,j,:].unsqueeze(0), dim=0)
+            #     next_score[j] = cur_score
+            #     indices[j] = cur_indices.detach().cpu()
             # Find the maximum score over all possible current tag
             # shape: (batch_size, num_tags)
-            # next_score, indices = next_score.max(dim=1)
+            next_score, indices = next_score.max(dim=1)
             # print(next_score.shape)
 
             # Set score to the next score if this timestep is valid (mask == 1)
             # and save the index that produces the next score
             # shape: (batch_size, num_tags)
             score = torch.where(mask[i].unsqueeze(1), next_score, score)
-            history.append(indices.clone())
+            history.append(indices)
 
         # Now, compute the best path for each sample
         # shape: (batch_size,)

@@ -102,10 +102,10 @@ def main(args):
                             shuffle=True,
                             collate_fn=padding)
     val_iter = DataLoader(dataset=valset,
-                          batch_size=args['batch_size'],
+                          batch_size=args['eval_bsize'],
                           collate_fn=padding)
     test_iter = DataLoader(dataset=testset,
-                           batch_size=args['batch_size'],
+                           batch_size=args['eval_bsize'],
                            collate_fn=padding)
     print("Loading Dataset Done!!!")
     # args['dev_id'] = 1 if args['use_gcn'] else 0
