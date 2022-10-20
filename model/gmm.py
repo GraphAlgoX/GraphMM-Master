@@ -202,8 +202,8 @@ class GMM(nn.Module):
         pure_grid_feat[gdata.singleton_grid_mask] = self.trace_feat_fc(gdata.singleton_grid_location)
         full_grid_emb = torch.zeros(gdata.num_grids + 1, 2 * self.emb_dim).to(self.device)
         full_grid_emb[1:, :] = self.trace_gcn(pure_grid_feat,
-                                              gdata.trace_inadj,
-                                              gdata.trace_outadj,
+                                              gdata.trace_in_edge_index,
+                                              gdata.trace_out_edge_index,
                                               gdata.trace_weight)
         return full_road_emb, full_grid_emb
 
