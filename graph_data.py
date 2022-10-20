@@ -20,7 +20,7 @@ class GraphData():
         trace_pt_path = data_path + 'trace_graph_pt/'
         road_pt_path = data_path + 'road_graph_pt/'
         # 2*num_of_edges
-        self.trace_weight = torch.load(trace_pt_path + 'inweight.pt').to(device)
+        self.trace_weight = torch.load(trace_pt_path + 'inweight.pt').float().to(device)
         self.trace_in_edge_index = torch.load(trace_pt_path + 'in_edge_index.pt').to(device)
         self.trace_out_edge_index = torch.load(trace_pt_path + 'out_edge_index.pt').to(device)
         road_edge_index = torch.load(road_pt_path + 'edge_index.pt')
