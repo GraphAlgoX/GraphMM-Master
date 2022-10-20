@@ -2,8 +2,8 @@ import networkx as nx
 import torch
 import pickle
 
-data_path = '/data/GeQian/g2s_2/data_for_GMM-Master/data/'
-pkl_path = '/data/GeQian/g2s_2/data_for_GMM-Master/used_pkl/'
+data_path = '/data/GeQian/g2s_2/gmm_data/data/'
+pkl_path = '/data/GeQian/g2s_2/gmm_data/used_pkl/'
 
 # road_graph = nx.read_gml(data_path + 'road_graph.gml', destringizer=int)
 road_graph = pickle.load(open(data_path + 'road_graph.pkl', 'rb'))

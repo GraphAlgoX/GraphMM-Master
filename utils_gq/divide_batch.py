@@ -130,6 +130,7 @@ print(len(full_batch_ls))
 
 
 max_set_lens = 0
+road_set_len_ls = []
 for tmsfdidx, batch_ls in enumerate(full_batch_ls):
     assert(len(batch_ls) == batch_size or tmsfdidx==len(full_batch_ls)-1)
     road_set = set()
@@ -142,8 +143,21 @@ for tmsfdidx, batch_ls in enumerate(full_batch_ls):
                         road_set.add(q)
     
     max_set_lens = max(max_set_lens, len(road_set))
-    print(len(road_set))
+    # print(len(road_set))
+    road_set_len_ls.append(len(road_set))
+
+def check_len(ls, threshold):
+    ans = 0
+    for i in ls:
+        if i > threshold:
+            ans += 1
+    print(f'threshold = {threshold}, num = {ans}')
 
 print('batch_size=', batch_size, ';  max_set_lens=',max_set_lens)
-
+check_len(road_set_len_ls, 2000)
+check_len(road_set_len_ls, 1000)
+check_len(road_set_len_ls, 500)
+check_len(road_set_len_ls, 200)
+check_len(road_set_len_ls, 100)
+print(f'full_road_set num = {len(road_set_len_ls)}')
 

@@ -154,7 +154,7 @@ def build_pyG(G):
     return x, in_edge_index, inweight, out_edge_index, outweight
 
 
-data_path = '/data/GeQian/g2s_2/data_for_GMM-Master/data/'
+data_path = '/data/GeQian/g2s_2/gmm_data/data/'
 get_border(data_path+'pure_data/newroad.txt')
 print('MIN_LAT=', MIN_LAT)
 print('MAX_LAT=', MAX_LAT)

@@ -9,7 +9,7 @@ def get_params():
     parser.add_argument("--lr", type=float, default=0.0005)
     parser.add_argument("--parent_path",
                         type=str,
-                        default="/data/LuoWei/Code")
+                        default="/data/GeQian/g2s_2/gmm_data/")
     parser.add_argument("--emb_dim", type=int, default=256)
     parser.add_argument("--layer", type=int, default=4)
     parser.add_argument("--wd", type=float, default=1e-8)
