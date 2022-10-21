@@ -13,6 +13,7 @@ from tqdm import tqdm
 import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score
+import os.path as osp
 
 
 def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
@@ -89,9 +90,10 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
 
 
 def main(args):
-    save_path = "ckpt/bz{}_lr{}_ep{}_edim{}_att{}_dp{}_best_gclip.pt".format(
-        args['batch_size'], args['lr'], args['epochs'], args['emb_dim'], args['atten_flag'], args['drop_prob'])
-    root_path = args['parent_path']
+    save_path = "{}/ckpt/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_best.pt".format(
+        args['parent_path'], args['batch_size'], args['lr'], args['epochs'], 
+        args['emb_dim'], args['drop_prob'], args['tf_ratio'])
+    root_path = osp.join(args['parent_path'], 'gmm-data')
     trainset = MyDataset(root_path, "train")
     valset = MyDataset(root_path, "val")
     testset = MyDataset(root_path, "test")
@@ -100,22 +102,23 @@ def main(args):
                             shuffle=True,
                             collate_fn=padding)
     val_iter = DataLoader(dataset=valset,
-                          batch_size=512,
+                          batch_size=args['batch_size'],
                           collate_fn=padding)
     test_iter = DataLoader(dataset=testset,
-                           batch_size=512,
+                           batch_size=args['batch_size'],
                            collate_fn=padding)
     print("Loading Dataset Done!!!")
     # args['dev_id'] = 1 if args['use_gcn'] else 0
     device = torch.device(f"cuda:{args['dev_id']}" if torch.cuda.is_available() else "cpu")
 
-    gdata = GraphData(parent_path=args['parent_path'],
+    gdata = GraphData(root_path=root_path,
                       layer=args['layer'],
+                      gamma=args['gamma'],
                       device=device)
     print('get graph extra data finished!')
     model = GMM(emb_dim=args['emb_dim'],
                 target_size=gdata.num_roads,
-                beam_size=args['beam_size'],
+                topn=args['topn'],
                 device=device,
                 atten_flag=args['atten_flag'],
                 drop_prob=args['drop_prob'])

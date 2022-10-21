@@ -162,7 +162,7 @@ class CRF(nn.Module):
         seq_length, batch_size = mask.shape
 
         # gain topk
-        _, indices = torch.topk(emissions, dim=-1, k=50)
+        _, indices = torch.topk(emissions, dim=-1, k=self.topn)
         tag_sets = indices.flatten().unique().detach().cpu().numpy().tolist()
         tag_sets = sorted(tag_sets)
         tag_map = {i:tag for i, tag in enumerate(tag_sets)}
