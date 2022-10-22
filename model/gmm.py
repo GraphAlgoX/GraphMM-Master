@@ -176,13 +176,12 @@ class GMM(nn.Module):
         #         feat, full_road_emb, gdata.A_list)
         #     infer_output[idx, :road_lens[idx]] = tag_seq
         # return score, infer_output
-        # tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
-        # for i in range(len(road_lens)):
-        #     tgt_mask[i][:road_lens[i]] = 1.
-        # tgt_mask = tgt_mask.bool().to(self.device)
-        # preds = self.crf.decode(emissions, full_road_emb, gdata.A_list.squeeze(0), tgt_mask)
-        # return None, preds
-        return None, emissions
+        tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
+        for i in range(len(road_lens)):
+            tgt_mask[i][:road_lens[i]] = 1.
+        tgt_mask = tgt_mask.bool().to(self.device)
+        preds = self.crf.decode(emissions, full_road_emb, gdata.A_list.squeeze(0), tgt_mask)
+        return None, preds
 
     def get_emb(self, gdata):
         """
