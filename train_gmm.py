@@ -14,6 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score
 import os.path as osp
+from copy import deepcopy
 
 
 def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
@@ -122,30 +123,30 @@ def main(args):
                 atten_flag=args['atten_flag'],
                 drop_prob=args['drop_prob'])
     model = model.to(device)
-    best_acc = 0.
+    best_acc, best_model = 0., None
     print("Loading model Done!!!")
     loss_fn = nn.CrossEntropyLoss()
     # loss_fn = nn.NLLLoss()
-    optimizer = optim.AdamW(params=model.parameters(),
+    optimizer = optim.Adam(params=model.parameters(),
                             lr=args['lr'],
                             weight_decay=args['wd'])
     for e in range(args['epochs']):
         print(f"================Epoch: {e + 1}================")
         train_avg_loss = train(model, train_iter, loss_fn, optimizer, device, gdata, args)
         val_avg_acc, val_avg_r, val_avg_p = evaluate(model, val_iter, device, gdata, 0.)
-        if best_acc <= val_avg_acc:
+        if best_acc < val_avg_acc:
+            best_model = deepcopy(model)
             best_acc = val_avg_acc
-            torch.save(model.state_dict(), save_path)
         print("Epoch {}: train_avg_loss {} eval_avg_acc: {} eval_avg_r {} eval_avg_p {}".format(
             e + 1, train_avg_loss, val_avg_acc, val_avg_r, val_avg_p))
         nni.report_intermediate_result(val_avg_acc)
 
-    model.load_state_dict(torch.load(save_path))
-    train_avg_acc, _, _ = evaluate(model, train_iter, device, gdata, 0.)
+    train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, 0.)
     print(f"trainset: acc({train_avg_acc})")
-    test_avg_acc, test_avg_r, test_avg_p = evaluate(model, test_iter, device, gdata, 0.)
+    test_avg_acc, test_avg_r, test_avg_p = evaluate(best_model, test_iter, device, gdata, 0.)
     nni.report_final_result(test_avg_acc)
     print(f"testset: acc({test_avg_acc}) recall({test_avg_r}) precision({test_avg_p})")
+    torch.save(best_model.state_dict(), save_path)
 
 
 if __name__ == "__main__":

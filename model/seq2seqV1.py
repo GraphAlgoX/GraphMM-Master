@@ -57,6 +57,7 @@ class Seq2Seq(nn.Module):
                               batch_first=True)
 
     def encode(self, src, src_len):
+        self.encoder.flatten_parameters()
         src = F.dropout(src, self.drop_prob, training=self.training)
         # encode traj sequence
         packed_embedded = nn.utils.rnn.pack_padded_sequence(
@@ -77,6 +78,7 @@ class Seq2Seq(nn.Module):
         hidden: (1, batch_size, hidden_size)
         encoder_outputs: (batch_size, src_len, num_directions * hidden_size)
         """
+        self.decoder.flatten_parameters()
         src = F.dropout(src, self.drop_prob, training=self.training)
         if self.atten_flag:
             a = self.attn(hidden, encoder_outputs, attn_mask)
