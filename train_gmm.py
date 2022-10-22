@@ -119,6 +119,7 @@ def main(args):
     model = GMM(emb_dim=args['emb_dim'],
                 target_size=gdata.num_roads,
                 topn=args['topn'],
+                neg_nums=args['neg_nums'],
                 device=device,
                 atten_flag=args['atten_flag'],
                 drop_prob=args['drop_prob'])
