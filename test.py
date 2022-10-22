@@ -36,11 +36,21 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
                                        gdata=gdata,
                                        sample_Idx=sample_Idx,
                                        tf_ratio=tf_ratio)
-            # infer_seq = infer_seq.argmax(dim=-1).detach().cpu().numpy().flatten()
-            infer_seq = np.array(infer_seq).flatten()
+            infer_seq = infer_seq.detach().cpu()
+            _, indices = torch.topk(infer_seq, dim=-1, k=args['topn'])
+            indices = indices.reshape(-1, args['topn'])
             tgt_roads = tgt_roads.flatten().numpy()
             mask = (tgt_roads != -1)
-            acc = accuracy_score(infer_seq[mask], tgt_roads[mask])
+            indices = indices[mask]
+            tgt_roads = tgt_roads[mask]
+            bingo = 0
+            for gt, topk in zip(tgt_roads, indices):
+                if gt in topk:
+                    bingo += 1
+            acc = bingo / tgt_roads.shape[0]
+            # infer_seq = infer_seq.argmax(dim=-1).detach().cpu().numpy().flatten()
+            # infer_seq = np.array(infer_seq).flatten()
+            # acc = accuracy_score(infer_seq[mask], tgt_roads[mask])
             # acc, recall, precision = cal_id_acc(infer_seq, tgt_roads,
             #                                     road_lens)
             eval_acc_sum += acc
