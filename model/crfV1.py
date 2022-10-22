@@ -37,7 +37,7 @@ class CRF(nn.Module):
         energy = A_list *  F.relu(attention)
         return energy
 
-    def forward(self, emissions, tags, full_road_emb, A_list, mask, reduction='sum'):
+    def forward(self, emissions, tags, full_road_emb, A_list, mask):
         """
         Compute the conditional log likelihood of a sequence of tags given emission scores.
         emissions: (batch_size, seq_length, num_tags)
@@ -70,13 +70,6 @@ class CRF(nn.Module):
         # shape: (batch_size,)
         llh = numerator - denominator
 
-        if reduction == 'none':
-            return llh
-        if reduction == 'sum':
-            return llh.sum()
-        if reduction == 'mean':
-            return llh.mean()
-        assert reduction == 'token_mean'
         return llh.sum() / mask.float().sum()
 
     def decode(self, emissions, full_road_emb, A_list, mask):
