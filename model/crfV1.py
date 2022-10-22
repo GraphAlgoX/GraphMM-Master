@@ -69,9 +69,17 @@ class CRF(nn.Module):
         denominator = self._compute_normalizer(emissions, trans, neg_tag_sets, mask)
         # shape: (batch_size,)
         llh = numerator - denominator
+        
+        if reduction == 'none':
+            return llh
+        if reduction == 'sum':
+            return llh.sum()
+        if reduction == 'mean':
+            return llh.mean()
+        assert reduction == 'token_mean'
         return llh.sum() / mask.float().sum()
 
-    def decode(self, emissions, full_road_emb, A_list, mask):
+    def decode(self, emissions, full_road_emb, A_list, mask, reduction='sum'):
         """
         Find the most likely tag sequence using Viterbi algorithm.
         emissions: (batch_size, seq_length, num_tags)

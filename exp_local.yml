@@ -1,5 +1,5 @@
 experimentName: GMM_Attention
-searchSpaceFile: search_space1.json
+searchSpaceFile: search_space_full.json
 trialCommand: python3 train_gmm.py --dev_id 1
 experimentWorkingDirectory: ../nni-experiments
 trialConcurrency: 1
