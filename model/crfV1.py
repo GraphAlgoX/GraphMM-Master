@@ -37,7 +37,7 @@ class CRF(nn.Module):
         energy = A_list *  F.relu(attention)
         return energy
 
-    def forward(self, emissions, tags, full_road_emb, A_list, mask):
+    def forward(self, emissions, tags, full_road_emb, A_list, mask, reduction='sum'):
         """
         Compute the conditional log likelihood of a sequence of tags given emission scores.
         emissions: (batch_size, seq_length, num_tags)
@@ -69,7 +69,7 @@ class CRF(nn.Module):
         denominator = self._compute_normalizer(emissions, trans, neg_tag_sets, mask)
         # shape: (batch_size,)
         llh = numerator - denominator
-        
+
         if reduction == 'none':
             return llh
         if reduction == 'sum':
@@ -79,7 +79,7 @@ class CRF(nn.Module):
         assert reduction == 'token_mean'
         return llh.sum() / mask.float().sum()
 
-    def decode(self, emissions, full_road_emb, A_list, mask, reduction='sum'):
+    def decode(self, emissions, full_road_emb, A_list, mask):
         """
         Find the most likely tag sequence using Viterbi algorithm.
         emissions: (batch_size, seq_length, num_tags)
