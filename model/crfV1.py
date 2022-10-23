@@ -38,6 +38,10 @@ class CRF(nn.Module):
             emissions = emissions.transpose(0, 1)
             tags = tags.transpose(0, 1)
             mask = mask.transpose(0, 1)
+        # get trainsition matrix
+        transitions = self.get_transitions(full_road_emb, A_list)
+        # shape: (batch_size,)
+        numerator = self._compute_score(emissions, tags, transitions, mask)
         # sample neg_nums satus
         seq_ends = mask.long().sum(dim=0) - 1
         neg_tag_sets = set()
@@ -49,13 +53,9 @@ class CRF(nn.Module):
             cand_set = [i for i in range(self.num_tags) if i not in neg_tag_sets]
             neg_tag_sets |=  set(np.random.choice(cand_set, remain_nums, replace=False).tolist())
         neg_tag_sets = sorted(list(neg_tag_sets))
-        # get trainsition matrix
-        transitions = self.get_transitions(full_road_emb, A_list)
-        # shape: (batch_size,)
-        numerator = self._compute_score(emissions, tags, transitions, mask)
-        # shape: (batch_size,)
         trans = transitions[neg_tag_sets, :]
         trans = trans[:, neg_tag_sets]
+        # shape: (batch_size,)
         denominator = self._compute_normalizer(emissions, trans, neg_tag_sets, mask)
         # shape: (batch_size,)
         llh = numerator - denominator
