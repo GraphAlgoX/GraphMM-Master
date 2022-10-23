@@ -1,8 +1,8 @@
 experimentName: GMM_Attention
 searchSpaceFile: search_space_full.json
-trialCommand: python3 train_gmm.py --dev_id 1
+trialCommand: python3 train_gmm.py --dev_id 0
 experimentWorkingDirectory: ../nni-experiments
-trialConcurrency: 2
+trialConcurrency: 1
 tuner:
   name: TPE
   classArgs:

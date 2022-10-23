@@ -15,15 +15,18 @@ class MyDataset(Dataset):
     def buildingDataset(self, data_path):
         grid2traceid_dict = pickle.load(open(self.map_path, 'rb'))
         self.traces_ls = []
-        self.traces_gps_ls = []
+        # self.traces_gps_ls = []
         with open(data_path, "r") as fp:
             data = json.load(fp)
             for gps_ls in data[0::3]:
                 traces = []
+                # trace_grids = []
                 for gps in gps_ls:
                     gridx, gridy = utils.gps2grid(gps[0], gps[1])
                     traces.append(grid2traceid_dict[(gridx, gridy)] + 1)
+                    # trace_grids.append([gridx, gridy])
                 self.traces_ls.append(traces)
+                # self.traces_gps_ls.append(trace_grids)
             self.roads_ls = data[1::3]
             self.traces_gps_ls = data[0::3]
             self.sampleIdx_ls = data[2::3]

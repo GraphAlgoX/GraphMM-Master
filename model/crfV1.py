@@ -18,20 +18,7 @@ class CRF(nn.Module):
         self.neg_nums = neg_nums
         self.W = nn.Linear(emb_dim, emb_dim, bias=False)
 
-    def transition(self, tag1, tag2, full_road_emb, A_list):
-        """
-        tag1, tag2: (batch_size,)
-        """
-        # (batch_size, emb_dim)
-        emb1 = self.W(full_road_emb[tag1]).unsqueeze(1)
-        # (batch_size, emb_dim, 1)
-        emb2 = full_road_emb[tag2].unsqueeze(-1)
-        # (batch_size, )
-        r = torch.bmm(emb1, emb2).squeeze()
-        energy = A_list[tag1, tag2] * F.relu(r)
-        return energy
-
-    def transitions(self, full_road_emb, A_list):
+    def get_transitions(self, full_road_emb, A_list):
         # (num_tags, num_tags)
         r = self.W(full_road_emb) @ full_road_emb.T
         energy = A_list * F.relu(r)
@@ -51,6 +38,7 @@ class CRF(nn.Module):
             emissions = emissions.transpose(0, 1)
             tags = tags.transpose(0, 1)
             mask = mask.transpose(0, 1)
+        # sample neg_nums satus
         seq_ends = mask.long().sum(dim=0) - 1
         neg_tag_sets = set()
         for i in range(batch_size):
@@ -61,10 +49,12 @@ class CRF(nn.Module):
             cand_set = [i for i in range(self.num_tags) if i not in neg_tag_sets]
             neg_tag_sets |=  set(np.random.choice(cand_set, remain_nums, replace=False).tolist())
         neg_tag_sets = sorted(list(neg_tag_sets))
+        # get trainsition matrix
+        transitions = self.get_transitions(full_road_emb, A_list)
         # shape: (batch_size,)
-        numerator = self._compute_score(emissions, tags, full_road_emb, A_list, mask)
+        numerator = self._compute_score(emissions, tags, transitions, mask)
         # shape: (batch_size,)
-        trans = self.transitions(full_road_emb, A_list)[neg_tag_sets, :]
+        trans = transitions[neg_tag_sets, :]
         trans = trans[:, neg_tag_sets]
         denominator = self._compute_normalizer(emissions, trans, neg_tag_sets, mask)
         # shape: (batch_size,)
@@ -83,10 +73,10 @@ class CRF(nn.Module):
         if self.batch_first:
             emissions = emissions.transpose(0, 1)
             mask = mask.transpose(0, 1)
-        trans = self.transitions(full_road_emb, A_list)
+        trans = self.get_transitions(full_road_emb, A_list)
         return self._viterbi_decode(emissions, trans, mask)
 
-    def _compute_score(self, emissions, tags, full_road_emb, A_list, mask):
+    def _compute_score(self, emissions, tags, transitions, mask):
         """
         S(X,y)
         emissions: (seq_length, batch_size, num_tags)
@@ -105,7 +95,7 @@ class CRF(nn.Module):
         for i in range(1, seq_length):
             # Transition score to next tag, only added if next timestep is valid (mask == 1)
             # shape: (batch_size,)
-            score += self.transition(tags[i - 1], tags[i], full_road_emb, A_list) * mask[i]
+            score += transitions[tags[i - 1], tags[i]] * mask[i]
 
             # Emission score for next tag, only added if next timestep is valid (mask == 1)
             # shape: (batch_size,)
