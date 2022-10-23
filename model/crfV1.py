@@ -73,8 +73,8 @@ class CRF(nn.Module):
         if self.batch_first:
             emissions = emissions.transpose(0, 1)
             mask = mask.transpose(0, 1)
-        trans = self.get_transitions(full_road_emb, A_list)
-        return self._viterbi_decode(emissions, trans, mask)
+        transitions = self.get_transitions(full_road_emb, A_list)
+        return self._viterbi_decode(emissions, transitions, mask)
 
     def _compute_score(self, emissions, tags, transitions, mask):
         """
@@ -82,6 +82,7 @@ class CRF(nn.Module):
         emissions: (seq_length, batch_size, num_tags)
         tags: (seq_length, batch_size)
         mask: (seq_length, batch_size)
+        transitions: (num_tags, num_tags)
         return: (batch_size, )
         """
 
@@ -143,11 +144,11 @@ class CRF(nn.Module):
         # shape: (batch_size,)
         return torch.logsumexp(score, dim=1)
 
-    def _viterbi_decode(self, emissions, trans, mask):
+    def _viterbi_decode(self, emissions, transitions, mask):
         """
         emissions: (seq_length, batch_size, num_tags)
         mask: (seq_length, batch_size)
-        trans: (num_tags, num_tags)
+        transitions: (num_tags, num_tags)
         """
 
         seq_length, batch_size = mask.shape
@@ -158,7 +159,7 @@ class CRF(nn.Module):
         tag_sets = sorted(tag_sets)
         tag_map = {i:tag for i, tag in enumerate(tag_sets)}
         # gain sub transition prob matrix
-        trans = trans[tag_sets, :]
+        trans = transitions[tag_sets, :]
         trans = trans[:, tag_sets]
         # Start transition and first emission
         # shape: (batch_size, k)
