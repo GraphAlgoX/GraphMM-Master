@@ -27,14 +27,14 @@ class CRF(nn.Module):
         # (batch_size, emb_dim, 1)
         emb2 = full_road_emb[tag2].unsqueeze(-1)
         # (batch_size, )
-        r = F.relu(torch.bmm(emb1, emb2)).squeeze()
-        energy = A_list[tag1, tag2] * r
+        r = torch.bmm(emb1, emb2).squeeze()
+        energy = A_list[tag1, tag2] * F.relu(r)
         return energy
 
     def transitions(self, full_road_emb, A_list):
         # (num_tags, num_tags)
-        attention = self.W(full_road_emb) @ full_road_emb.T
-        energy = A_list *  F.relu(attention)
+        r = self.W(full_road_emb) @ full_road_emb.T
+        energy = A_list * F.relu(r)
         return energy
 
     def forward(self, emissions, tags, full_road_emb, A_list, mask):

@@ -91,9 +91,10 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
 
 
 def main(args):
-    save_path = "{}/ckpt/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_tn{}_best.pt".format(
+    save_path = "{}/ckpt/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_tn{}_ng{}_best.pt".format(
         args['parent_path'], args['batch_size'], args['lr'], args['epochs'], 
-        args['emb_dim'], args['drop_prob'], args['tf_ratio'], args['topn'])
+        args['emb_dim'], args['drop_prob'], args['tf_ratio'], args['topn'], 
+        args['neg_nums'])
     root_path = osp.join(args['parent_path'], 'gmm-data')
     trainset = MyDataset(root_path, "train")
     valset = MyDataset(root_path, "val")
