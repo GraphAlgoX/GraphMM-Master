@@ -25,14 +25,15 @@ class GMM(nn.Module):
         self.emb_dim = emb_dim
         self.target_size = target_size
         self.atten_flag = atten_flag
-        self.use_crf = use_crf
+        self.use_crf = True if use_crf else False
+        self.bi = True if bi else False
         self.road_gin = RoadGIN(emb_dim)
         self.trace_gcn = TraceGCN(emb_dim)
         self.seq2seq = Seq2Seq(input_size=2 * emb_dim,
                                hidden_size=emb_dim,
                                atten_flag=atten_flag,
-                               drop_prob=drop_prob,
-                               bi=bi)
+                               bi=self.bi,
+                               drop_prob=drop_prob)
         self.road_feat_fc = nn.Linear(28, emb_dim) # 3*8 + 4
         self.trace_feat_fc = nn.Linear(4, emb_dim)
         self.fc_input = nn.Linear(2 * self.emb_dim + 3, 2 * self.emb_dim)
