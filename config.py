@@ -10,7 +10,11 @@ def get_params():
     parser.add_argument("--parent_path",
                         type=str,
                         default="/data/LuoWei/Code")
-    parser.add_argument("--data_dir", type=str, default="gmm-data0.5", default=["gmm-data0.5", "gmm-data0.25", "gmm-data0.125"])
+    parser.add_argument(
+        "--data_dir",
+        type=str,
+        default="gmm-data0.5",
+        choices=["gmm-data0.5", "gmm-data0.25", "gmm-data0.125"])
     parser.add_argument("--emb_dim", type=int, default=256)
     parser.add_argument("--layer", type=int, default=4)
     parser.add_argument("--wd", type=float, default=1e-8)
