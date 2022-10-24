@@ -18,13 +18,14 @@ class GMM(nn.Module):
                  neg_nums,
                  atten_flag=True,
                  drop_prob=0.5,
-                 bi=True) -> None:
+                 bi=True,
+                 use_crf=True) -> None:
         super().__init__()
         self.device = device
         self.emb_dim = emb_dim
         self.target_size = target_size
         self.atten_flag = atten_flag
-        # self.road_gcn = RoadGCN(4 * loc_dim)
+        self.use_crf = use_crf
         self.road_gin = RoadGIN(emb_dim)
         self.trace_gcn = TraceGCN(emb_dim)
         self.seq2seq = Seq2Seq(input_size=2 * emb_dim,
@@ -35,11 +36,12 @@ class GMM(nn.Module):
         self.road_feat_fc = nn.Linear(28, emb_dim) # 3*8 + 4
         self.trace_feat_fc = nn.Linear(4, emb_dim)
         self.fc_input = nn.Linear(2 * self.emb_dim + 3, 2 * self.emb_dim)
-        self.crf = CRF(num_tags=target_size,
-                       emb_dim=emb_dim,
-                       topn=topn,
-                       neg_nums=neg_nums,
-                       device=device)
+        if self.use_crf:
+            self.crf = CRF(num_tags=target_size,
+                        emb_dim=emb_dim,
+                        topn=topn,
+                        neg_nums=neg_nums,
+                        device=device)
 
     def forward(self, grid_traces, tgt_roads, traces_gps, traces_lens,
                 road_lens, gdata, sample_Idx, tf_ratio):
@@ -62,11 +64,15 @@ class GMM(nn.Module):
                                    sample_Idx=sample_Idx,
                                    easy_filter_cache=gdata.A_list.squeeze(0),
                                    full_road_emb=full_road_emb)
-        tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
-        for i in range(len(road_lens)):
-            tgt_mask[i][:road_lens[i]] = 1.
-        tgt_mask = tgt_mask.bool().to(self.device)
-        loss = -self.crf(emissions, tgt_roads, full_road_emb.detach(), gdata.A_list.squeeze(0), tgt_mask)
+        if self.use_crf:
+            tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
+            for i in range(len(road_lens)):
+                tgt_mask[i][:road_lens[i]] = 1.
+            tgt_mask = tgt_mask.bool().to(self.device)
+            loss = -self.crf(emissions, tgt_roads, full_road_emb.detach(), gdata.A_list.squeeze(0), tgt_mask)
+        else:
+            mask = (tgt_roads.view(-1) != -1)
+            loss = F.cross_entropy(emissions.view(-1, self.target_size)[mask], tgt_roads.view(-1)[mask])
         return loss
 
     def infer(self, grid_traces, traces_gps, traces_lens, road_lens, sample_Idx, gdata,
@@ -88,12 +94,15 @@ class GMM(nn.Module):
                                    gdata=gdata,
                                    easy_filter_cache=gdata.A_list.squeeze(0),
                                    full_road_emb=full_road_emb)
-        tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
-        for i in range(len(road_lens)):
-            tgt_mask[i][:road_lens[i]] = 1.
-        tgt_mask = tgt_mask.bool().to(self.device)
-        preds = self.crf.decode(emissions, full_road_emb, gdata.A_list.squeeze(0), tgt_mask)
-        return None, preds
+        if self.use_crf:
+            tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
+            for i in range(len(road_lens)):
+                tgt_mask[i][:road_lens[i]] = 1.
+            tgt_mask = tgt_mask.bool().to(self.device)
+            preds = self.crf.decode(emissions, full_road_emb, gdata.A_list.squeeze(0), tgt_mask)
+        else:
+            preds = F.softmax(emissions, dim=-1)
+        return preds
 
     def get_emb(self, gdata):
         """

@@ -17,7 +17,7 @@ import os.path as osp
 from copy import deepcopy
 
 
-def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
+def train(model, train_iter, optimizer, device, gdata, args):
     model.train()
     train_l_sum, count = 0., 0
 
@@ -45,7 +45,7 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
         # loss = loss_fn(y_pred.view(-1, y_pred.shape[-1])[mask], tgt_roads.view(-1)[mask])
         train_l_sum += loss.item()
         count += 1
-        if count % 1 == 0:
+        if count % 5 == 0:
             print(f"Iteration {count}: train_loss {loss.item()}")
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -54,7 +54,7 @@ def train(model, train_iter, loss_fn, optimizer, device, gdata, args):
     return train_l_sum / count
 
 
-def evaluate(model, eval_iter, device, gdata, tf_ratio):
+def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
     model.eval()
     eval_acc_sum, eval_r_sum, eval_p_sum = 0., 0., 0.
     count = 0
@@ -66,15 +66,17 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
             sample_Idx = data[3].to(device)
             traces_lens = data[4]
             road_lens = data[5]
-            _, infer_seq = model.infer(grid_traces=grid_traces,
-                                       traces_gps=traces_gps,
-                                       traces_lens=traces_lens,
-                                       road_lens=road_lens,
-                                       gdata=gdata,
-                                       sample_Idx=sample_Idx,
-                                       tf_ratio=tf_ratio)
-            # infer_seq = infer_seq.argmax(dim=-1).detach().cpu().numpy().flatten()
-            infer_seq = np.array(infer_seq).flatten()
+            infer_seq = model.infer(grid_traces=grid_traces,
+                                    traces_gps=traces_gps,
+                                    traces_lens=traces_lens,
+                                    road_lens=road_lens,
+                                    gdata=gdata,
+                                    sample_Idx=sample_Idx,
+                                    tf_ratio=tf_ratio)
+            if use_crf:
+                infer_seq = np.array(infer_seq).flatten()
+            else:
+                infer_seq = infer_seq.argmax(dim=-1).detach().cpu().numpy().flatten()
             tgt_roads = tgt_roads.flatten().numpy()
             mask = (tgt_roads != -1)
             acc = accuracy_score(infer_seq[mask], tgt_roads[mask])
@@ -122,20 +124,20 @@ def main(args):
                 topn=args['topn'],
                 neg_nums=args['neg_nums'],
                 device=device,
+                use_crf=args['use_crf'],
                 atten_flag=args['atten_flag'],
                 drop_prob=args['drop_prob'])
     model = model.to(device)
     best_acc, best_model = 0., None
     print("Loading model Done!!!")
-    loss_fn = nn.CrossEntropyLoss()
     # loss_fn = nn.NLLLoss()
     optimizer = optim.Adam(params=model.parameters(),
                             lr=args['lr'],
                             weight_decay=args['wd'])
     for e in range(args['epochs']):
         print(f"================Epoch: {e + 1}================")
-        train_avg_loss = train(model, train_iter, loss_fn, optimizer, device, gdata, args)
-        val_avg_acc, val_avg_r, val_avg_p = evaluate(model, val_iter, device, gdata, 0.)
+        train_avg_loss = train(model, train_iter, optimizer, device, gdata, args)
+        val_avg_acc, val_avg_r, val_avg_p = evaluate(model, val_iter, device, gdata, 0., args['use_crf'])
         if best_acc < val_avg_acc:
             best_model = deepcopy(model)
             best_acc = val_avg_acc

@@ -14,6 +14,7 @@ def get_params():
     parser.add_argument("--layer", type=int, default=4)
     parser.add_argument("--wd", type=float, default=1e-8)
     parser.add_argument("--dev_id", type=int, default=0)
+    parser.add_argument("--use_crf", type=int, default=1)
     parser.add_argument("--atten_flag", type=int, default=1)
     parser.add_argument("--tf_ratio", type=float, default=0.5)
     parser.add_argument("--drop_prob", type=float, default=0.5)
