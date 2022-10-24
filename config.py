@@ -18,7 +18,7 @@ def get_params():
     parser.add_argument("--tf_ratio", type=float, default=0.5)
     parser.add_argument("--drop_prob", type=float, default=0.5)
     parser.add_argument("--gamma", type=float, default=10000)
-    parser.add_argument("--topn", type=int, default=30)
+    parser.add_argument("--topn", type=int, default=5)
     parser.add_argument("--neg_nums", type=int, default=500)
     args, _ = parser.parse_known_args()
 

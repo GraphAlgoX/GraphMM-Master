@@ -58,6 +58,7 @@ class GraphData():
         A = torch.load(data_path+'A.pt')
         # A_list [1, n, n]
         self.A_list = self.get_adj_poly(A, layer, gamma)
+        # self.A_list = self.get_prob_matrix(A, layer, gamma)
 
     def get_adj_poly_old(self, A, layer):
         nR = self.num_roads
@@ -78,6 +79,17 @@ class GraphData():
         ans[ans == 0] = -gamma
         return ans.unsqueeze(0)
 
+    def get_prob_matrix(self, A, layer, gamma):
+        A_ = (A + torch.eye(self.num_roads)).to(self.device)
+        deg = A_.sum(dim=1).float()
+        deg_inv = deg.pow_(-1)
+        deg_inv.masked_fill_(deg_inv == float('inf'), 0.)
+        A_ = deg_inv * A_
+        ans = A_.clone()
+        for _ in range(layer-1):
+            ans = ans @ A_
+        ans[ans == 0] = -gamma
+        return ans.unsqueeze(0)
 
 if __name__ == "__main__":
     pass

@@ -1,6 +1,6 @@
 experimentName: GMM_Attention
 searchSpaceFile: search_space_full.json
-trialCommand: python3 train_gmm.py --dev_id 0
+trialCommand: python3 train_gmm.py --dev_id 1 --eval_bsize 32
 experimentWorkingDirectory: ../nni-experiments
 trialConcurrency: 1
 tuner:

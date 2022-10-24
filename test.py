@@ -36,21 +36,21 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
                                        gdata=gdata,
                                        sample_Idx=sample_Idx,
                                        tf_ratio=tf_ratio)
-            infer_seq = infer_seq.detach().cpu()
-            _, indices = torch.topk(infer_seq, dim=-1, k=args['topn'])
-            indices = indices.reshape(-1, args['topn'])
             tgt_roads = tgt_roads.flatten().numpy()
             mask = (tgt_roads != -1)
-            indices = indices[mask]
-            tgt_roads = tgt_roads[mask]
-            bingo = 0
-            for gt, topk in zip(tgt_roads, indices):
-                if gt in topk:
-                    bingo += 1
-            acc = bingo / tgt_roads.shape[0]
+            # infer_seq = infer_seq.detach().cpu()
+            # _, indices = torch.topk(infer_seq, dim=-1, k=args['topn'])
+            # indices = indices.reshape(-1, args['topn'])
+            # indices = indices[mask]
+            # tgt_roads = tgt_roads[mask]
+            # bingo = 0
+            # for gt, topk in zip(tgt_roads, indices):
+            #     if gt in topk:
+            #         bingo += 1
+            # acc = bingo / tgt_roads.shape[0]
             # infer_seq = infer_seq.argmax(dim=-1).detach().cpu().numpy().flatten()
-            # infer_seq = np.array(infer_seq).flatten()
-            # acc = accuracy_score(infer_seq[mask], tgt_roads[mask])
+            infer_seq = np.array(infer_seq).flatten()
+            acc = accuracy_score(infer_seq[mask], tgt_roads[mask])
             # acc, recall, precision = cal_id_acc(infer_seq, tgt_roads,
             #                                     road_lens)
             eval_acc_sum += acc
@@ -63,7 +63,7 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
     return eval_acc_sum / count, eval_r_sum / count, eval_p_sum / count
 
 args = vars(get_params())
-ckpt_path = "/data/LuoWei/Code/ckpt/bz32_lr0.0001_ep200_edim256_dp0.6_tf0.5_best.pt"
+ckpt_path = "/data/LuoWei/Code/ckpt/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn30_ng800_best.pt"
 root_path = osp.join(args['parent_path'], 'gmm-data')
 testset = MyDataset(root_path, "test")
 test_iter = DataLoader(dataset=testset,
