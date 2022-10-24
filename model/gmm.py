@@ -12,14 +12,14 @@ import torch.nn.functional as F
 class GMM(nn.Module):
     def __init__(self,
                  emb_dim,
-                 device,
                  target_size,
                  topn,
                  neg_nums,
                  atten_flag=True,
                  drop_prob=0.5,
                  bi=True,
-                 use_crf=True) -> None:
+                 use_crf=True,
+                 device="cpu") -> None:
         super().__init__()
         self.device = device
         self.emb_dim = emb_dim

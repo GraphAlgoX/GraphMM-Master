@@ -125,6 +125,7 @@ def main(args):
                 neg_nums=args['neg_nums'],
                 device=device,
                 use_crf=args['use_crf'],
+                bi=args['bi'],
                 atten_flag=args['atten_flag'],
                 drop_prob=args['drop_prob'])
     model = model.to(device)
@@ -145,9 +146,9 @@ def main(args):
             e + 1, train_avg_loss, val_avg_acc, val_avg_r, val_avg_p))
         nni.report_intermediate_result(val_avg_acc)
 
-    train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, 0.)
+    train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, 0., args['use_crf'])
     print(f"trainset: acc({train_avg_acc})")
-    test_avg_acc, test_avg_r, test_avg_p = evaluate(best_model, test_iter, device, gdata, 0.)
+    test_avg_acc, test_avg_r, test_avg_p = evaluate(best_model, test_iter, device, gdata, 0., args['use_crf'])
     nni.report_final_result(test_avg_acc)
     print(f"testset: acc({test_avg_acc}) recall({test_avg_r}) precision({test_avg_p})")
     torch.save(best_model.state_dict(), save_path)
