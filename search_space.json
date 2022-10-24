@@ -3,5 +3,5 @@
     "emb_dim":{"_type":"choice", "_value": [256]},
     "tf_ratio":{"_type":"choice", "_value": [0.5]},
     "drop_prob":{"_type":"choice", "_value": [0.5]},
-    "neg_nums":{"_type":"choice", "_value": [600]}
+    "neg_nums":{"_type":"choice", "_value": [800]}
 }

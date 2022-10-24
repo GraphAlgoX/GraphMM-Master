@@ -93,10 +93,10 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
 
 
 def main(args):
-    save_path = "{}/ckpt/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_tn{}_ng{}_best.pt".format(
+    save_path = "{}/ckpt/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_tn{}_ng{}_crf{}_best2.pt".format(
         args['parent_path'], args['batch_size'], args['lr'], args['epochs'], 
         args['emb_dim'], args['drop_prob'], args['tf_ratio'], args['topn'], 
-        args['neg_nums'])
+        args['neg_nums'], args['use_crf'])
     root_path = osp.join(args['parent_path'], 'gmm-data')
     trainset = MyDataset(root_path, "train")
     valset = MyDataset(root_path, "val")
@@ -146,8 +146,8 @@ def main(args):
             e + 1, train_avg_loss, val_avg_acc, val_avg_r, val_avg_p))
         nni.report_intermediate_result(val_avg_acc)
 
-    train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, 0., args['use_crf'])
-    print(f"trainset: acc({train_avg_acc})")
+    # train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, 0., args['use_crf'])
+    # print(f"trainset: acc({train_avg_acc})")
     test_avg_acc, test_avg_r, test_avg_p = evaluate(best_model, test_iter, device, gdata, 0., args['use_crf'])
     nni.report_final_result(test_avg_acc)
     print(f"testset: acc({test_avg_acc}) recall({test_avg_r}) precision({test_avg_p})")
