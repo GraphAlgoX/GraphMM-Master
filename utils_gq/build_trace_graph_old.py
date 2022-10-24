@@ -1,6 +1,7 @@
 import networkx as nx
 import torch
 import os
+import pickle
 
 MIN_LAT = 90  # 纬度
 MAX_LAT = 0
@@ -103,8 +104,6 @@ def build_graph(grid2id_dict, trace_dict):
     G.add_weighted_edges_from(weighted_edges)
     print('nodes num = ', G.number_of_nodes())
     for k, v in grid2id_dict.items():
-        if v not in G.nodes():
-            G.add_node(v)
         G.nodes[v]['gridx'] = k[0]
         G.nodes[v]['gridy'] = k[1]
     return G
@@ -155,8 +154,8 @@ def build_pyG(G):
     outweight = torch.tensor(outweight)
     return x, in_edge_index, inweight, out_edge_index, outweight
 
-# '/data/GeQian/g2s_2/gmm-data0.125/data/data_for_mtraj'
-data_path = '/data/GeQian/g2s_2/gmm-data0.125/data/'
+
+data_path = '/data/GeQian/g2s_2/gmm_data/data/'
 get_border(data_path+'pure_data/newroad.txt')
 print('MIN_LAT=', MIN_LAT)
 print('MAX_LAT=', MAX_LAT)
@@ -168,8 +167,8 @@ print('MAX_LNG=', MAX_LNG)
 if __name__ == "__main__":
     # 40.058076, 116.338461
     # 85,130
-
-    grid2id_dict, trace_dict = get_data(data_path+'data_for_mtraj/downsample_trace.txt')
+    full_grid2id_dict = pickle.load(open(''))
+    grid2id_dict, trace_dict = get_data(data_path+'pure_data/full_trace_new.txt')
     print(len(trace_dict), len(grid2id_dict))
     print(max(list(grid2id_dict.values())))
     id_se = set()
@@ -183,16 +182,16 @@ if __name__ == "__main__":
     for idx, id in enumerate(id_ls):
         id2newid[id] = idx
 
-    # grid2id_dict_ = {}
-    # for k, v in grid2id_dict.items():
-    #     if v in id2newid.keys():
-    #         grid2id_dict_[k] = id2newid[v]
-    # trace_dict_ = {}
-    # for k, v in trace_dict.items():
-    #     trace_dict_[(id2newid[k[0]], id2newid[k[1]])] = v
+    grid2id_dict_ = {}
+    for k, v in grid2id_dict.items():
+        if v in id2newid.keys():
+            grid2id_dict_[k] = id2newid[v]
+    trace_dict_ = {}
+    for k, v in trace_dict.items():
+        trace_dict_[(id2newid[k[0]], id2newid[k[1]])] = v
 
-    # trace_dict = trace_dict_
-    # grid2id_dict = grid2id_dict_
+    trace_dict = trace_dict_
+    grid2id_dict = grid2id_dict_
     for k in trace_dict.keys():
         if k[0] == k[1]:
             print(k)

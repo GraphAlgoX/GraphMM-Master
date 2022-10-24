@@ -8,7 +8,8 @@ import utils.utils as utils
 
 class MyDataset(Dataset):
     def __init__(self, root_path, name):
-        self.data_path = osp.join(root_path, f"data/{name}_data/{name}.json")
+        # self.data_path = osp.join(root_path, f"data/{name}_data/{name}.json")
+        self.data_path = f'/data/GeQian/g2s_2/gmm-data/data_0.125/{name}_data/{name}.json'
         self.map_path = osp.join(root_path, "used_pkl/grid2traceid_dict.pkl")
         self.buildingDataset(self.data_path)
 
@@ -30,10 +31,10 @@ class MyDataset(Dataset):
             self.roads_ls = data[1::3]
             self.traces_gps_ls = data[0::3]
             self.sampleIdx_ls = data[2::3]
-        self.traces_gps_ls = self.traces_gps_ls[:10000]
-        self.traces_ls = self.traces_ls[:10000]
-        self.roads_ls = self.roads_ls[:10000]
-        self.sampleIdx_ls = self.sampleIdx_ls[:10000]
+        self.traces_gps_ls = self.traces_gps_ls#[:10000]
+        self.traces_ls = self.traces_ls#[:10000]
+        self.roads_ls = self.roads_ls#[:10000]
+        self.sampleIdx_ls = self.sampleIdx_ls#[:10000]
         
         self.length = len(self.traces_ls)
         assert len(self.traces_ls) == len(self.roads_ls)
