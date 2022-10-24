@@ -1,6 +1,7 @@
 {
-    "lr":{"_type":"choice", "_value": [0.001, 0.0001, 0.0005]},
-    "topn":{"_type":"choice", "_value": [10, 30, 50]},
-    "tf_ratio":{"_type":"choice", "_value": [0.2, 0.5, 0.8]},
-    "drop_prob":{"_type":"choice", "_value": [0.0, 0.5]}
+    "lr":{"_type":"choice", "_value": [0.0001]},
+    "emb_dim":{"_type":"choice", "_value": [256]},
+    "tf_ratio":{"_type":"choice", "_value": [0.5]},
+    "drop_prob":{"_type":"choice", "_value": [0.5]},
+    "neg_nums":{"_type":"choice", "_value": [500]}
 }
