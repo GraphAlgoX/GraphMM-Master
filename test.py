@@ -26,14 +26,16 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
             sample_Idx = data[3].to(device)
             traces_lens = data[4]
             road_lens = data[5]
-            _, infer_seq = model.infer(grid_traces=grid_traces,
-                                       traces_gps=traces_gps,
-                                       traces_lens=traces_lens,
-                                       road_lens=road_lens,
-                                       gdata=gdata,
-                                       sample_Idx=sample_Idx,
-                                       tf_ratio=tf_ratio)
-            if not use_crf:
+            infer_seq = model.infer(grid_traces=grid_traces,
+                                    traces_gps=traces_gps,
+                                    traces_lens=traces_lens,
+                                    road_lens=road_lens,
+                                    gdata=gdata,
+                                    sample_Idx=sample_Idx,
+                                    tf_ratio=tf_ratio)
+            if use_crf:
+                infer_seq = torch.tensor(infer_seq)
+            else:
                 infer_seq = infer_seq.argmax(dim=-1)
             # tgt_roads = tgt_roads.flatten().numpy()
             # mask = (tgt_roads != -1)
@@ -58,8 +60,9 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
     return eval_acc_sum / count, eval_r_sum / count, eval_p_sum / count
 
 args = vars(get_params())
-ckpt_path = "/data/LuoWei/Code/ckpt/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn30_ng800_best.pt"
+ckpt_path = "/data/LuoWei/Code/ckpt/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn5_ng800_crfTrue_best2.pt"
 root_path = osp.join(args['parent_path'], args['data_dir'])
+print(root_path)
 testset = MyDataset(root_path, "test")
 test_iter = DataLoader(dataset=testset,
                         batch_size=args['eval_bsize'],
