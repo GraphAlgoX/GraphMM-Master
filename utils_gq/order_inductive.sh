@@ -21,6 +21,10 @@ echo "finished 5"
 
 
 # inductive-test
-
 python get_downsample_train.py
+
 python build_train_trace_graph.py
+
+cd ../utils
+python maproad2grid_train.py
+python build_train_grid_road_matrix.py
