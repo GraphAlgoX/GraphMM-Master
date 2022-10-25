@@ -46,7 +46,7 @@ def get_train_dict(finalLs):
     return train_dict
 
 
-path = '/data/GeQian/g2s_2/gmm-data0.125/data/data_for_mtraj/'
+path = '/data/GeQian/g2s_2/gmm-data0.5/data/data_for_mtraj/'
 
 train_trace_ls = readTrajFile(path+'train_trace.txt')
 
