@@ -1,9 +1,6 @@
-import nni
 import numpy as np
 import torch
-import torch.optim as optim
 from config import get_params
-from nni.utils import merge_parameter
 from model.gmm import GMM
 from utils_gq.data_loader import MyDataset, padding
 from torch.utils.data import DataLoader
@@ -17,7 +14,7 @@ import os.path as osp
 from config import get_params
 
 
-def evaluate(model, eval_iter, device, gdata, tf_ratio):
+def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
     model.eval()
     eval_acc_sum, eval_r_sum, eval_p_sum = 0., 0., 0.
     count = 0
@@ -36,8 +33,10 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
                                        gdata=gdata,
                                        sample_Idx=sample_Idx,
                                        tf_ratio=tf_ratio)
-            tgt_roads = tgt_roads.flatten().numpy()
-            mask = (tgt_roads != -1)
+            if not use_crf:
+                infer_seq = infer_seq.argmax(dim=-1)
+            # tgt_roads = tgt_roads.flatten().numpy()
+            # mask = (tgt_roads != -1)
             # infer_seq = infer_seq.detach().cpu()
             # _, indices = torch.topk(infer_seq, dim=-1, k=args['topn'])
             # indices = indices.reshape(-1, args['topn'])
@@ -49,22 +48,18 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio):
             #         bingo += 1
             # acc = bingo / tgt_roads.shape[0]
             # infer_seq = infer_seq.argmax(dim=-1).detach().cpu().numpy().flatten()
-            infer_seq = np.array(infer_seq).flatten()
-            acc = accuracy_score(infer_seq[mask], tgt_roads[mask])
-            # acc, recall, precision = cal_id_acc(infer_seq, tgt_roads,
-            #                                     road_lens)
+            # infer_seq = np.array(infer_seq).flatten()
+            # acc = accuracy_score(infer_seq[mask], tgt_roads[mask])
+            acc, recall, precision = cal_id_acc(infer_seq, tgt_roads, road_lens)
             eval_acc_sum += acc
-            eval_r_sum += 0
-            eval_p_sum += 0
-            # eval_r_sum += recall
-            # eval_p_sum += precision
+            eval_r_sum += recall
+            eval_p_sum += precision
             count += 1
-            # exit(0)
     return eval_acc_sum / count, eval_r_sum / count, eval_p_sum / count
 
 args = vars(get_params())
 ckpt_path = "/data/LuoWei/Code/ckpt/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn30_ng800_best.pt"
-root_path = osp.join(args['parent_path'], 'gmm-data')
+root_path = osp.join(args['parent_path'], args['data_dir'])
 testset = MyDataset(root_path, "test")
 test_iter = DataLoader(dataset=testset,
                         batch_size=args['eval_bsize'],
@@ -82,14 +77,13 @@ model = GMM(emb_dim=args['emb_dim'],
             topn=args['topn'],
             neg_nums=args['neg_nums'],
             device=device,
+            use_crf=args['use_crf'],
+            bi=args['bi'],
             atten_flag=args['atten_flag'],
             drop_prob=args['drop_prob'])
 model.load_state_dict(torch.load(ckpt_path))
 model = model.to(device)
-best_acc = 0.
 print("Loading model Done!!!")
-# loss_fn = nn.NLLLoss()
-test_avg_acc, test_avg_r, test_avg_p = evaluate(model, test_iter, device, gdata, 0.)
-nni.report_final_result(test_avg_acc)
+test_avg_acc, test_avg_r, test_avg_p = evaluate(model, test_iter, device, gdata, 0., args['use_crf'])
 print(f"testset: acc({test_avg_acc}) recall({test_avg_r}) precision({test_avg_p})")
 

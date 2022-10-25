@@ -30,10 +30,10 @@ class MyDataset(Dataset):
             self.roads_ls = data[1::3]
             self.traces_gps_ls = data[0::3]
             self.sampleIdx_ls = data[2::3]
-        self.traces_gps_ls = self.traces_gps_ls[:10000]
-        self.traces_ls = self.traces_ls[:10000]
-        self.roads_ls = self.roads_ls[:10000]
-        self.sampleIdx_ls = self.sampleIdx_ls[:10000]
+        # self.traces_gps_ls = self.traces_gps_ls[:10000]
+        # self.traces_ls = self.traces_ls[:10000]
+        # self.roads_ls = self.roads_ls[:10000]
+        # self.sampleIdx_ls = self.sampleIdx_ls[:10000]
         
         self.length = len(self.traces_ls)
         assert len(self.traces_ls) == len(self.roads_ls)
