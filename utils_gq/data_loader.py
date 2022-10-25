@@ -8,7 +8,8 @@ import utils.utils as utils
 
 class MyDataset(Dataset):
     def __init__(self, root_path, name):
-        self.data_path = osp.join(root_path, f"data/{name}_data/{name}.json")
+        # self.data_path = osp.join(root_path, f"data/{name}_data/{name}.json")
+        self.data_path = f'/data/GeQian/g2s_2/gmm-data/data_0.125/{name}_data/{name}.json'
         self.map_path = osp.join(root_path, "used_pkl/grid2traceid_dict.pkl")
         self.buildingDataset(self.data_path)
 

@@ -1,1 +1,0 @@
-python -u train_gmm_without_crf.py --dev_id 1 > log/test_without_crf_full_new_data.txt

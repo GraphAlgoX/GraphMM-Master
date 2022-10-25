@@ -169,7 +169,7 @@ if __name__ == "__main__":
     # 40.058076, 116.338461
     # 85,130
 
-    grid2id_dict, trace_dict = get_data(data_path+'data_for_mtraj/downsample_trace.txt')
+    grid2id_dict, trace_dict = get_data(data_path+'data_for_mtraj/train_downsample_trace.txt')
     print(len(trace_dict), len(grid2id_dict))
     print(max(list(grid2id_dict.values())))
     id_se = set()
@@ -204,12 +204,12 @@ if __name__ == "__main__":
     # 17363 nodes, 61349 edges, directed, each edge is counted twice?
     # print(nx.number_connected_components(G))
     # print(G.is_connected())
-    nx.write_gml(G, data_path+"trace_graph.gml")
+    nx.write_gml(G, data_path+"train_trace_graph.gml")
     x, in_edge_index, inweight, out_edge_index, outweight = build_pyG(G)
-    if not os.path.exists(data_path+'trace_graph_pt/'):
-        os.mkdir(data_path+'trace_graph_pt/')
-    torch.save(in_edge_index, data_path+'trace_graph_pt/in_edge_index.pt')
-    torch.save(x, data_path+'trace_graph_pt/x.pt')
-    torch.save(inweight, data_path+'trace_graph_pt/inweight.pt')
-    torch.save(outweight, data_path+'trace_graph_pt/outweight.pt')
-    torch.save(out_edge_index, data_path+'trace_graph_pt/out_edge_index.pt')
+    if not os.path.exists(data_path+'train_trace_graph_pt/'):
+        os.mkdir(data_path+'train_trace_graph_pt/')
+    torch.save(in_edge_index, data_path+'train_trace_graph_pt/in_edge_index.pt')
+    torch.save(x, data_path+'train_trace_graph_pt/x.pt')
+    torch.save(inweight, data_path+'train_trace_graph_pt/inweight.pt')
+    torch.save(outweight, data_path+'train_trace_graph_pt/outweight.pt')
+    torch.save(out_edge_index, data_path+'train_trace_graph_pt/out_edge_index.pt')
