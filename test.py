@@ -36,7 +36,7 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
             if use_crf:
                 infer_seq = torch.tensor(infer_seq)
             else:
-                infer_seq = infer_seq.argmax(dim=-1)
+                infer_seq = infer_seq.argmax(dim=-1).detach().cpu()
             # tgt_roads = tgt_roads.flatten().numpy()
             # mask = (tgt_roads != -1)
             # infer_seq = infer_seq.detach().cpu()
@@ -88,5 +88,5 @@ model.load_state_dict(torch.load(ckpt_path))
 model = model.to(device)
 print("Loading model Done!!!")
 test_avg_acc, test_avg_r, test_avg_p = evaluate(model, test_iter, device, gdata, 0., args['use_crf'])
-print(f"testset: acc({test_avg_acc}) recall({test_avg_r}) precision({test_avg_p})")
+print(f"testset: acc({test_avg_acc:.3f}) precision({test_avg_p:.3f}) recall({test_avg_r:.3f})")
 
