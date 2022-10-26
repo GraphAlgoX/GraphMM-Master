@@ -3,6 +3,7 @@ import torch
 from config import get_params
 from model.gmm import GMM
 from utils_gq.data_loader import MyDataset, padding
+# from utils_gq.data_loader_inductive import MyDataset_inductive, 
 from torch.utils.data import DataLoader
 from graph_data import GraphData
 from metrics_calculate import cal_id_acc
@@ -61,7 +62,7 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
 
 args = vars(get_params())
 # ckpt_path = "/data/LuoWei/Code/ckpt/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn5_ng800_crfTrue_best2.pt"
-ckpt_path = 'inductive_results/ckpt_0.5/bz256_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn5_ng500_crfFalse_best2.pt'
+ckpt_path = 'inductive_results/ckpt_0.25/bz256_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn5_ng500_crfFalse_best2.pt'
 root_path = osp.join(args['parent_path'], args['data_dir'])
 print(root_path)
 testset = MyDataset(root_path, "test")

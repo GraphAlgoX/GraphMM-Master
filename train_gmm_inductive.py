@@ -93,11 +93,11 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
 
 
 def main(args):
-    save_path = "./inductive_results/ckpt_0.5/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_tn{}_ng{}_crf{}_best2.pt".format(
+    save_path = "./inductive_results/ckpt_0.25/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_tn{}_ng{}_crf{}_best2.pt".format(
         args['batch_size'], args['lr'], args['epochs'], 
         args['emb_dim'], args['drop_prob'], args['tf_ratio'], args['topn'], 
         args['neg_nums'], args['use_crf'])
-    root_path = osp.join(args['parent_path'], 'gmm-data0.5')
+    root_path = osp.join(args['parent_path'], args['data_dir'])
     print(root_path)
     trainset = MyDataset(root_path, "train")
     # valset = MyDataset(root_path, "val")
@@ -148,8 +148,9 @@ def main(args):
         print("Epoch {}: train_avg_loss {} ".format(
             e + 1, train_avg_loss))
         # nni.report_intermediate_result(val_avg_acc)
-
-    # train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, 0., args['use_crf'])
+        if e % 10 == 0 or e == args['epochs'] - 1:
+            train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, 0., args['use_crf'])
+            print(f'train_avg_acc = {train_avg_acc}')
     # print(f"trainset: acc({train_avg_acc})")
     # test_avg_acc, test_avg_r, test_avg_p = evaluate(best_model, test_iter, device, gdata, 0., args['use_crf'])
     # nni.report_final_result(test_avg_acc)
