@@ -3,8 +3,8 @@ import torch
 import pickle
 import os
 
-data_path = '/data/GeQian/g2s_2/gmm-data0.125/data/'
-pkl_path = '/data/GeQian/g2s_2/gmm-data0.125/train_used_pkl/'
+data_path = '/data/GeQian/g2s_2/gmm-data0.5/data/'
+pkl_path = '/data/GeQian/g2s_2/gmm-data0.5/train_used_pkl/'
 if not os.path.exists(data_path+'train_trace_graph_pt/'):
     os.mkdir(data_path+'train_trace_graph_pt/')
 # road_graph = nx.read_gml(data_path + 'road_graph.gml', destringizer=int)
@@ -32,8 +32,8 @@ for i in range(trace_graph.number_of_nodes()):
 singleton_grid_loction = torch.stack(singleton_grid_loction, dim=0)
 singleton_grid_mask = torch.tensor(singleton_grid_mask, dtype=int)
 torch.save(singleton_grid_loction,
-           data_path + 'trace_graph_pt/singleton_grid_location.pt')
+           data_path + 'train_trace_graph_pt/singleton_grid_location.pt')
 torch.save(singleton_grid_mask,
-           data_path + 'trace_graph_pt/singleton_grid_mask.pt')
-torch.save(map_matrix, data_path + 'trace_graph_pt/map_matrix.pt')
+           data_path + 'train_trace_graph_pt/singleton_grid_mask.pt')
+torch.save(map_matrix, data_path + 'train_trace_graph_pt/map_matrix.pt')
 print(map_matrix)

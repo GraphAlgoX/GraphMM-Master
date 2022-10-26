@@ -1,1 +1,1 @@
-python -u train_gmm.py --dev_id 0 > log/test.txt
+python -u train_gmm_inductive.py --dev_id 0 > inductive_results/0.5_log/no_crf.txt --data_dir gmm-data0.5
