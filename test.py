@@ -17,8 +17,6 @@ from config import get_params
 
 def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
     model.eval()
-    eval_acc_sum, eval_r_sum, eval_p_sum = 0., 0., 0.
-    count = 0
     global_bingo, global_acc = 0., []
     global_length, global_tnums = 0., 0.
     with torch.no_grad():
@@ -50,14 +48,13 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
     return acc_t, acc_g
 
 args = vars(get_params())
-ckpt_path = "/data/LuoWei/Code/ckpt2/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn5_ng800_crfTrue_best2.pt"
+ckpt_path = "/data/LuoWei/Code/ckpt2/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn5_ng800_crfTrue_best8.pt"
 root_path = osp.join(args['parent_path'], args['data_dir'])
 testset = MyDataset(root_path, "test")
 test_iter = DataLoader(dataset=testset,
                         batch_size=args['eval_bsize'],
                         collate_fn=padding)
 print("Loading Dataset Done!!!")
-# args['dev_id'] = 1 if args['use_gcn'] else 0
 device = torch.device(f"cuda:{args['dev_id']}" if torch.cuda.is_available() else "cpu")
 gdata = GraphData(root_path=root_path,
                     layer=args['layer'],
@@ -77,5 +74,5 @@ model.load_state_dict(torch.load(ckpt_path))
 model = model.to(device)
 print("Loading model Done!!!")
 acc_t, acc_g = evaluate(model, test_iter, device, gdata, 0., args['use_crf'])
-print(f"testset: acc(T)({acc_t:.3f}) acc(G)({acc_g:.3f})")
+print(f"testset: acc(T)({acc_t:.4f}) acc(G)({acc_g:.4f})")
 
