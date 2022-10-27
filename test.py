@@ -43,12 +43,12 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
             global_acc.extend(batch_acc)
             global_length += sum(road_lens)
             global_tnums += tgt_roads.size(0)
-    acc_t = global_bingo / global_length
-    acc_g = sum(global_acc) / global_tnums
+    acc_g = global_bingo / global_length
+    acc_t = sum(global_acc) / global_tnums
     return acc_t, acc_g
 
 args = vars(get_params())
-ckpt_path = "/data/LuoWei/Code/ckpt2/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn5_ng800_crfTrue_best8.pt"
+ckpt_path = "/data/LuoWei/Code/ckpt2/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn5_ng800_crfTrue_best2.pt"
 root_path = osp.join(args['parent_path'], args['data_dir'])
 testset = MyDataset(root_path, "test")
 test_iter = DataLoader(dataset=testset,
