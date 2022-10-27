@@ -46,6 +46,8 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
             global_length += sum(road_lens)
             global_tnums += tgt_roads.size(0)
     acc_t = global_bingo / global_length
+    print(global_bingo, global_length)
+    print(len(global_acc), global_tnums)
     acc_g = sum(global_acc) / global_tnums
     return acc_t, acc_g
 

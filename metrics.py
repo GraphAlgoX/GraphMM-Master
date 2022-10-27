@@ -9,8 +9,8 @@ def cal_id_acc(predict, target, trg_len):
     batch_size = predict.size(0)
     for i in range(batch_size):
         cur_tlen = trg_len[i]
-        cur_pred = predict[:cur_tlen]
-        cur_true = target[:cur_tlen]
+        cur_pred = predict[i, :cur_tlen]
+        cur_true = target[i, :cur_tlen]
         bingo = (cur_pred == cur_true).sum()
         batch_bingo += bingo
         batch_acc.append((bingo / cur_tlen).item())
