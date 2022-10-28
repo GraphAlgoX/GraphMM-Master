@@ -1,10 +1,6 @@
 # GMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations
 
-The repository if the official Pytorch implementation of experiments in the following paper:
-
-*Yu Liu†, Qian Ge†, Wei Luo, Qiang Huang‡, Haixu Wang, Xin Li, and Chang Liu. GMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations.*
-
-If you make use of the code/experiment of our work, please cite our paper.
+The repository if the official Pytorch implementation of experiments in GMM.
 
 
 
@@ -55,7 +51,7 @@ python test.py --atten_flag --bi --use_crf --data_dir {your data dir} --eval_bsi
 Evaluate gmm without crf:
 
 ```shell
-python test.py --atten_flag --bi --data_dir {your data dir} --eval_bsize 32
+python test.py --atten_flag --bi --data_dir {your data dir} --eval_bsize 256
 ```
 
 
