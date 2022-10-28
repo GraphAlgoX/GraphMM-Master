@@ -12,7 +12,7 @@ from config import get_params
 
 def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
     model.eval()
-    global_bingo, global_acc = 0., []
+    global_bingo, global_acc, global_avg_lcs = 0., [], []
     global_length, global_tnums = 0., 0.
     with torch.no_grad():
         for data in tqdm(eval_iter):
@@ -33,14 +33,16 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
                 infer_seq = torch.tensor(infer_seq)
             else:
                 infer_seq = infer_seq.argmax(dim=-1).detach().cpu()
-            batch_bingo, batch_acc = cal_id_acc(infer_seq, tgt_roads, road_lens)
+            batch_bingo, batch_acc, batch_avg_lcs = cal_id_acc(infer_seq, tgt_roads, road_lens)
             global_bingo += batch_bingo
             global_acc.extend(batch_acc)
+            global_avg_lcs.extend(batch_avg_lcs)
             global_length += sum(road_lens)
             global_tnums += tgt_roads.size(0)
     acc_g = global_bingo / global_length
     acc_t = sum(global_acc) / global_tnums
-    return acc_t, acc_g
+    avg_lcs = sum(global_avg_lcs) / global_tnums
+    return acc_t, acc_g, avg_lcs
 
 args = vars(get_params())
 ckpt_path = "/data/LuoWei/Code/ckpt2/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn5_ng800_crfTrue_best4.pt"
@@ -68,6 +70,6 @@ model = GMM(emb_dim=args['emb_dim'],
 model.load_state_dict(torch.load(ckpt_path))
 model = model.to(device)
 print("Loading model Done!!!")
-acc_t, acc_g = evaluate(model, test_iter, device, gdata, 0., args['use_crf'])
-print(f"testset: acc(T)({acc_t:.4f}) acc(G)({acc_g:.4f})")
+acc_t, acc_g, avg_lcs = evaluate(model, test_iter, device, gdata, 0., args['use_crf'])
+print(f"testset: acc(T)({acc_t:.4f}) acc(G)({acc_g:.4f}) acg_lcs({avg_lcs:.4f})")
 
