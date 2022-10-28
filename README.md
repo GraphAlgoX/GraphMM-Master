@@ -1,6 +1,6 @@
 # GMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations
 
-The repository if the official Pytorch implementation of experiments in GMM.
+The repository is the official Pytorch implementation of experiments in GMM.
 
 
 
