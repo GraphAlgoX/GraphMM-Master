@@ -97,8 +97,7 @@ def main(args):
         args['parent_path'], args['batch_size'], args['lr'], args['epochs'], 
         args['emb_dim'], args['drop_prob'], args['tf_ratio'], args['topn'], 
         args['neg_nums'], args['use_crf'])
-    root_path = osp.join(args['parent_path'], 'gmm-data0.5')
-    print(root_path)
+    root_path = osp.join(args['parent_path'], args['data_dir'])
     trainset = MyDataset(root_path, "train")
     valset = MyDataset(root_path, "val")
     testset = MyDataset(root_path, "test")
