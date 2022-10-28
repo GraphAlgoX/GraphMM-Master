@@ -1,5 +1,3 @@
-
-
 def cal_id_acc(predict, target, trg_len):
     """
     predict, target: (batch_size, seq_len)

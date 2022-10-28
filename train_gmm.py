@@ -10,7 +10,6 @@ from torch.utils.data import DataLoader
 from graph_data import GraphData
 from tqdm import tqdm
 import torch.nn as nn
-import torch.nn.functional as F
 from sklearn.metrics import accuracy_score
 import os.path as osp
 from copy import deepcopy
@@ -48,10 +47,9 @@ def train(model, train_iter, optimizer, device, gdata, args):
     return train_l_sum / count
 
 
-def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
+def evaluate(model, eval_iter, device, gdata, use_crf):
     model.eval()
-    eval_acc_sum, eval_r_sum, eval_p_sum = 0., 0., 0.
-    count = 0
+    eval_acc_sum, count = 0., 0
     with torch.no_grad():
         for data in tqdm(eval_iter):
             grid_traces = data[0].to(device)
@@ -66,7 +64,7 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
                                     road_lens=road_lens,
                                     gdata=gdata,
                                     sample_Idx=sample_Idx,
-                                    tf_ratio=tf_ratio)
+                                    tf_ratio=0.)
             if use_crf:
                 infer_seq = np.array(infer_seq).flatten()
             else:
@@ -130,15 +128,15 @@ def main(args):
         if best_acc < val_avg_acc:
             best_model = deepcopy(model)
             best_acc = val_avg_acc
-        print("Epoch {}: train_avg_loss {} eval_avg_acc: {} eval_avg_r {} eval_avg_p {}".format(
-            e + 1, train_avg_loss, val_avg_acc, val_avg_r, val_avg_p))
+        print("Epoch {}: train_avg_loss {} eval_avg_acc: {}".format(
+            e + 1, train_avg_loss, val_avg_acc))
         nni.report_intermediate_result(val_avg_acc)
 
-    # train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, 0., args['use_crf'])
+    # train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, args['use_crf'])
     # print(f"trainset: acc({train_avg_acc})")
-    test_avg_acc = evaluate(best_model, test_iter, device, gdata, 0., args['use_crf'])
+    test_avg_acc = evaluate(best_model, test_iter, device, gdata, args['use_crf'])
     nni.report_final_result(test_avg_acc)
-    print(f"testset: acc({test_avg_acc}) recall({test_avg_r}) precision({test_avg_p})")
+    print(f"testset: acc({test_avg_acc})")
     torch.save(best_model.state_dict(), save_path)
 
 

@@ -1,5 +1,12 @@
-`test_for_encoder.py` : test for encoder
+# GMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations
 
-`test_for_graphfilter` : test for graphfilter
+The repository if the official Pytorch implementation of experiments in the following paper:
 
-You need to change the `parent_path` to your own base path to run the above two python file.
+*Yu Liu†, Qian Ge†, Wei Luo, Qiang Huang‡, Haixu Wang, Xin Li, and Chang Liu. GMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations.*
+
+If you make use of the code/experiment of our work, please cite our paper.
+
+
+
+## Experiment Configuration
+

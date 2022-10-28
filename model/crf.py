@@ -46,7 +46,7 @@ class CRF(nn.Module):
         seq_ends = mask.long().sum(dim=0) - 1
         neg_tag_sets = set()
         for i in range(batch_size):
-            neg_tag_sets |= set(tags[:seq_ends[i] + 1,i].detach().cpu().numpy().tolist())
+            neg_tag_sets |= set(tags[:seq_ends[i] + 1, i].detach().cpu().numpy().tolist())
         assert len(neg_tag_sets) < self.neg_nums
         remain_nums = self.neg_nums - len(neg_tag_sets)
         # sample from topk
@@ -55,7 +55,7 @@ class CRF(nn.Module):
             tag_sets = indices.flatten().unique().detach().cpu().numpy().tolist()
             cand_set = [i for i in tag_sets if i not in neg_tag_sets]
             cand_num = len(cand_set)
-            neg_tag_sets |=  set(np.random.choice(cand_set, min(remain_nums, cand_num), replace=False).tolist())
+            neg_tag_sets |= set(np.random.choice(cand_set, min(remain_nums, cand_num), replace=False).tolist())
         neg_tag_sets = sorted(list(neg_tag_sets))
         trans = transitions[neg_tag_sets, :]
         trans = trans[:, neg_tag_sets]
@@ -161,7 +161,7 @@ class CRF(nn.Module):
         _, indices = torch.topk(emissions, dim=-1, k=self.topn)
         tag_sets = indices.flatten().unique().detach().cpu().numpy().tolist()
         tag_sets = sorted(tag_sets)
-        tag_map = {i:tag for i, tag in enumerate(tag_sets)}
+        tag_map = {i: tag for i, tag in enumerate(tag_sets)}
         # gain sub transition prob matrix
         trans = transitions[tag_sets, :]
         trans = trans[:, tag_sets]

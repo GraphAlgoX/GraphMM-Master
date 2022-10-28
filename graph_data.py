@@ -28,15 +28,6 @@ class GraphData():
                                      col=road_edge_index[1],
                                      sparse_sizes=(self.num_roads,
                                                    self.num_roads)).to(device)
-        # self.trace_inadj = SparseTensor(
-        #     row=trace_in_edge_index[0],
-        #     col=trace_in_edge_index[1],
-        #     sparse_sizes=(self.num_grids, self.num_grids)).to(device)
-        # self.trace_outadj = SparseTensor(
-        #     row=trace_out_edge_index[0],
-        #     col=trace_out_edge_index[1],
-        #     sparse_sizes=(self.num_grids, self.num_grids)).to(device)
-        # load initial features of road graph
         self.road_x = torch.load(road_pt_path + 'x.pt').to(device)
 
         self.singleton_grid_mask = torch.load(
@@ -54,42 +45,20 @@ class GraphData():
             v: k
             for k, v in self.grid2traceid_dict.items()
         }
-        # load f(A_R)
+        # gain A^k
         A = torch.load(data_path+'A.pt')
-        # A_list [1, n, n]
+        # A_list [n, n]
         self.A_list = self.get_adj_poly(A, layer, gamma)
-        # self.A_list = self.get_prob_matrix(A, layer, gamma)
-
-    def get_adj_poly_old(self, A, layer):
-        nR = self.num_roads
-        A_list = []
-        lstA = torch.eye(nR)
-        A_list.append(lstA.clone())
-        for _ in range(layer):
-            lstA = torch.mm(lstA, A)
-            A_list.append(lstA.clone())
-        return torch.stack(A_list)
     
     def get_adj_poly(self, A, layer, gamma):
         A_ = (A + torch.eye(self.num_roads)).to(self.device)
         ans = A_.clone()
         for _ in range(layer-1):
-            ans = ans@A_
+            ans = ans @ A_
         ans[ans != 0] = 1.
         ans[ans == 0] = -gamma
-        return ans.unsqueeze(0)
+        return ans
 
-    def get_prob_matrix(self, A, layer, gamma):
-        A_ = (A + torch.eye(self.num_roads)).to(self.device)
-        deg = A_.sum(dim=1).float()
-        deg_inv = deg.pow_(-1)
-        deg_inv.masked_fill_(deg_inv == float('inf'), 0.)
-        A_ = deg_inv * A_
-        ans = A_.clone()
-        for _ in range(layer-1):
-            ans = ans @ A_
-        ans[ans == 0] = -gamma
-        return ans.unsqueeze(0)
 
 if __name__ == "__main__":
     pass

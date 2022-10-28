@@ -1,7 +1,6 @@
 import torch.nn as nn
 import torch
 import random
-import math
 from model.road_gin import RoadGIN
 from model.trace_gcn import TraceGCN
 from model.seq2seq import Seq2Seq
@@ -33,22 +32,22 @@ class GMM(nn.Module):
                                atten_flag=atten_flag,
                                bi=bi,
                                drop_prob=drop_prob)
-        self.road_feat_fc = nn.Linear(28, emb_dim) # 3*8 + 4
+        self.road_feat_fc = nn.Linear(28, emb_dim)  # 3*8 + 4
         self.trace_feat_fc = nn.Linear(4, emb_dim)
         self.fc_input = nn.Linear(2 * self.emb_dim + 3, 2 * self.emb_dim)
         if self.use_crf:
             self.crf = CRF(num_tags=target_size,
-                        emb_dim=emb_dim,
-                        topn=topn,
-                        neg_nums=neg_nums,
-                        device=device)
+                           emb_dim=emb_dim,
+                           topn=topn,
+                           neg_nums=neg_nums,
+                           device=device)
 
     def forward(self, grid_traces, tgt_roads, traces_gps, traces_lens,
                 road_lens, gdata, sample_Idx, tf_ratio):
         """
-        grid_traces: (batch_size, seq_len, emb_size)
-        tgt_roads: (batch_size, seq_len1, emb_size)
-        traces_gps: (batch_size, seq_len, 2)
+        grid_traces: id of traj points, (batch_size, seq_len, emb_size)
+        tgt_roads: ground truth, (batch_size, seq_len1, emb_size)
+        traces_gps: gps location of traj points, (batch_size, seq_len, 2)
         sample_Idx: (batch_size, seq_len, 1)
         traces_lens, road_lens: (batch_size, )
         """
@@ -62,24 +61,22 @@ class GMM(nn.Module):
                                    full_grid_emb=full_grid_emb,
                                    gdata=gdata,
                                    sample_Idx=sample_Idx,
-                                   easy_filter_cache=gdata.A_list.squeeze(0),
                                    full_road_emb=full_road_emb)
         if self.use_crf:
             tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
             for i in range(len(road_lens)):
                 tgt_mask[i][:road_lens[i]] = 1.
             tgt_mask = tgt_mask.bool().to(self.device)
-            loss = -self.crf(emissions, tgt_roads, full_road_emb.detach(), gdata.A_list.squeeze(0), tgt_mask)
+            loss = -self.crf(emissions, tgt_roads, full_road_emb.detach(), gdata.A_list, tgt_mask)
         else:
             mask = (tgt_roads.view(-1) != -1)
             loss = F.cross_entropy(emissions.view(-1, self.target_size)[mask], tgt_roads.view(-1)[mask])
         return loss
 
-    def infer(self, grid_traces, traces_gps, traces_lens, road_lens, sample_Idx, gdata,
-              tf_ratio):
+    def infer(self, grid_traces, traces_gps, traces_lens, road_lens,
+              sample_Idx, gdata, tf_ratio):
         """
-        grid_traces: (batch_size, seq_len, emb_size)
-        traces_lens, road_lens: (batch_size, )
+        make predictions
         """
         full_road_emb, full_grid_emb = self.get_emb(gdata)
 
@@ -92,14 +89,13 @@ class GMM(nn.Module):
                                    full_grid_emb=full_grid_emb,
                                    sample_Idx=sample_Idx,
                                    gdata=gdata,
-                                   easy_filter_cache=gdata.A_list.squeeze(0),
                                    full_road_emb=full_road_emb)
         if self.use_crf:
             tgt_mask = torch.zeros(emissions.shape[0], int(max(road_lens)))
             for i in range(len(road_lens)):
                 tgt_mask[i][:road_lens[i]] = 1.
             tgt_mask = tgt_mask.bool().to(self.device)
-            preds = self.crf.decode(emissions, full_road_emb, gdata.A_list.squeeze(0), tgt_mask)
+            preds = self.crf.decode(emissions, full_road_emb, gdata.A_list, tgt_mask)
         else:
             preds = F.softmax(emissions, dim=-1)
         return preds
@@ -122,9 +118,9 @@ class GMM(nn.Module):
                                               gdata.trace_weight)
         return full_road_emb, full_grid_emb
 
-    def get_probs(self, grid_traces, tgt_roads, traces_gps, sample_Idx, trace_lens,
-                  road_lens, tf_ratio, full_road_emb, full_grid_emb,
-                  easy_filter_cache, gdata):
+    def get_probs(self, grid_traces, tgt_roads, traces_gps, sample_Idx,
+                  trace_lens, road_lens, tf_ratio, full_road_emb,
+                  full_grid_emb, gdata):
         """
         decode max_trace_lens times for tgt
         return (batch_size, max_road_lens, num_roads)
@@ -160,8 +156,7 @@ class GMM(nn.Module):
         for t in range(1, max_RL):
             if teacher_force:
                 inputs = full_road_emb[lst_road_id].view(B, 1, -1)
-            inputs, hiddens = self.seq2seq.decode(inputs, hiddens,
-                                                  encoder_outputs, attn_mask)
+            inputs, hiddens = self.seq2seq.decode(inputs, hiddens, encoder_outputs, attn_mask)
             probs[:, t, :] = inputs.squeeze(1) @ full_road_emb.detach().T
             teacher_force = random.random() < tf_ratio
             if teacher_force:
