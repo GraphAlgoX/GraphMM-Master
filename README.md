@@ -10,3 +10,20 @@ If you make use of the code/experiment of our work, please cite our paper.
 
 ## Experiment Configuration
 
+```
+Python: 3.7.13
+Pytorch: 1.10.1
+PyG: 2.0.4
+networkx: 2.6.3
+nni: 2.9
+```
+
+
+
+## Run Examples
+
+
+
+## Note
+
+Our crf is modified based on torchcrf.

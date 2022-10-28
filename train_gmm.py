@@ -124,7 +124,7 @@ def main(args):
     for e in range(args['epochs']):
         print(f"================Epoch: {e + 1}================")
         train_avg_loss = train(model, train_iter, optimizer, device, gdata, args)
-        val_avg_acc = evaluate(model, val_iter, device, gdata, 0., args['use_crf'])
+        val_avg_acc = evaluate(model, val_iter, device, gdata, args['use_crf'])
         if best_acc < val_avg_acc:
             best_model = deepcopy(model)
             best_acc = val_avg_acc
