@@ -48,7 +48,7 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
     return acc_t, acc_g
 
 args = vars(get_params())
-ckpt_path = "/data/LuoWei/Code/ckpt2/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn5_ng800_crfTrue_best2.pt"
+ckpt_path = "/data/LuoWei/Code/ckpt2/bz32_lr0.0001_ep200_edim256_dp0.5_tf0.5_tn5_ng800_crfTrue_best4.pt"
 root_path = osp.join(args['parent_path'], args['data_dir'])
 testset = MyDataset(root_path, "test")
 test_iter = DataLoader(dataset=testset,

@@ -9,7 +9,7 @@ def get_params():
     parser.add_argument("--lr", type=float, default=0.0001)
     parser.add_argument("--parent_path",
                         type=str,
-                        default="/data/GeQian/g2s_2/")
+                        default="/data/LuoWei/Code")
     parser.add_argument(
         "--data_dir",
         type=str,

@@ -4,7 +4,7 @@ import random
 import math
 from model.road_gin import RoadGIN
 from model.trace_gcn import TraceGCN
-from model.seq2seqV1 import Seq2Seq
+from model.seq2seq import Seq2Seq
 from model.crf import CRF
 import torch.nn.functional as F
 
