@@ -1,16 +1,11 @@
-import numpy as np
 import torch
 from config import get_params
 from model.gmm import GMM
 from utils_gq.data_loader import MyDataset, padding
 from torch.utils.data import DataLoader
 from graph_data import GraphData
-# from metrics_calculate import cal_id_acc
 from metrics import cal_id_acc
 from tqdm import tqdm
-import torch.nn as nn
-import torch.nn.functional as F
-from sklearn.metrics import accuracy_score
 import os.path as osp
 from config import get_params
 
