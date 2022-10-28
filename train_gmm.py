@@ -8,7 +8,6 @@ from model.gmm import GMM
 from utils_gq.data_loader import MyDataset, padding
 from torch.utils.data import DataLoader
 from graph_data import GraphData
-from metrics_calculate import cal_id_acc
 from tqdm import tqdm
 import torch.nn as nn
 import torch.nn.functional as F
@@ -38,11 +37,6 @@ def train(model, train_iter, optimizer, device, gdata, args):
                      gdata=gdata,
                      sample_Idx=sample_Idx,
                      tf_ratio=args['tf_ratio'])
-        # g = make_dot(y_pred, params=dict(model.named_parameters()))
-        # g.render('gmm', view=False)
-        # print(y_pred.shape, tgt_roads.shape)
-        # mask = (tgt_roads.view(-1) != -1)
-        # loss = loss_fn(y_pred.view(-1, y_pred.shape[-1])[mask], tgt_roads.view(-1)[mask])
         train_l_sum += loss.item()
         count += 1
         if count % 5 == 0:
@@ -80,16 +74,10 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
             tgt_roads = tgt_roads.flatten().numpy()
             mask = (tgt_roads != -1)
             acc = accuracy_score(infer_seq[mask], tgt_roads[mask])
-            # acc, recall, precision = cal_id_acc(infer_seq, tgt_roads,
-            #                                     road_lens)
             eval_acc_sum += acc
-            eval_r_sum += 0
-            eval_p_sum += 0
-            # eval_r_sum += recall
-            # eval_p_sum += precision
             count += 1
             # exit(0)
-    return eval_acc_sum / count, eval_r_sum / count, eval_p_sum / count
+    return eval_acc_sum / count
 
 
 def main(args):
@@ -138,7 +126,7 @@ def main(args):
     for e in range(args['epochs']):
         print(f"================Epoch: {e + 1}================")
         train_avg_loss = train(model, train_iter, optimizer, device, gdata, args)
-        val_avg_acc, val_avg_r, val_avg_p = evaluate(model, val_iter, device, gdata, 0., args['use_crf'])
+        val_avg_acc = evaluate(model, val_iter, device, gdata, 0., args['use_crf'])
         if best_acc < val_avg_acc:
             best_model = deepcopy(model)
             best_acc = val_avg_acc
@@ -148,7 +136,7 @@ def main(args):
 
     # train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, 0., args['use_crf'])
     # print(f"trainset: acc({train_avg_acc})")
-    test_avg_acc, test_avg_r, test_avg_p = evaluate(best_model, test_iter, device, gdata, 0., args['use_crf'])
+    test_avg_acc = evaluate(best_model, test_iter, device, gdata, 0., args['use_crf'])
     nni.report_final_result(test_avg_acc)
     print(f"testset: acc({test_avg_acc}) recall({test_avg_r}) precision({test_avg_p})")
     torch.save(best_model.state_dict(), save_path)
