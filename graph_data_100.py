@@ -45,10 +45,10 @@ class GraphData():
             v: k
             for k, v in self.grid2traceid_dict.items()
         }
-        # gain A^k
-        A = torch.load(data_path+'A.pt')
-        # A_list [n, n]
-        self.A_list = self.get_adj_poly(A, layer, gamma)
+
+        # A = torch.load(data_path+'A.pt')
+
+        # self.A_list = self.get_adj_poly(A, layer, gamma)
     
     def get_adj_poly(self, A, layer, gamma):
         A_ = (A + torch.eye(self.num_roads)).to(self.device)
