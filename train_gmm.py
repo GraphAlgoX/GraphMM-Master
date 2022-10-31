@@ -136,8 +136,8 @@ def main(args):
     # train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, args['use_crf'])
     # print(f"trainset: acc({train_avg_acc})")
     test_acc_t, test_avg_lcs = evaluate(best_model, test_iter, device, gdata, args['use_crf'])
-    nni.report_final_result(test_avg_acc)
-    print(f"testset: acct({test_avg_acc:.4f}) avg_lcs({test_avg_lcs:.4f})")
+    nni.report_final_result(test_acc_t)
+    print(f"testset: acct({test_acc_t:.4f}) avg_lcs({test_avg_lcs:.4f})")
     torch.save(best_model.state_dict(), save_path)
 
 
