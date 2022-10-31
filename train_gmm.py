@@ -11,6 +11,7 @@ from graph_data import GraphData
 from tqdm import tqdm
 import torch.nn as nn
 from sklearn.metrics import accuracy_score
+from metrics import cal_id_acc
 import os.path as osp
 from copy import deepcopy
 
@@ -49,7 +50,8 @@ def train(model, train_iter, optimizer, device, gdata, args):
 
 def evaluate(model, eval_iter, device, gdata, use_crf):
     model.eval()
-    eval_acc_sum, count = 0., 0
+    global_acc, global_avg_lcs = [], []
+    global_tnums = 0.
     with torch.no_grad():
         for data in tqdm(eval_iter):
             grid_traces = data[0].to(device)
@@ -66,23 +68,23 @@ def evaluate(model, eval_iter, device, gdata, use_crf):
                                     sample_Idx=sample_Idx,
                                     tf_ratio=0.)
             if use_crf:
-                infer_seq = np.array(infer_seq).flatten()
+                infer_seq = torch.tensor(infer_seq)
             else:
-                infer_seq = infer_seq.argmax(dim=-1).detach().cpu().numpy().flatten()
-            tgt_roads = tgt_roads.flatten().numpy()
-            mask = (tgt_roads != -1)
-            acc = accuracy_score(infer_seq[mask], tgt_roads[mask])
-            eval_acc_sum += acc
-            count += 1
-            # exit(0)
-    return eval_acc_sum / count
+                infer_seq = infer_seq.argmax(dim=-1).detach().cpu()
+            batch_acc, batch_avg_lcs = cal_id_acc(infer_seq, tgt_roads, road_lens)
+            global_acc.extend(batch_acc)
+            global_avg_lcs.extend(batch_avg_lcs)
+            global_tnums += tgt_roads.size(0)
+    acc_t = sum(global_acc) / global_tnums
+    avg_lcs = sum(global_avg_lcs) / global_tnums
+    return acc_t, avg_lcs
 
 
 def main(args):
-    save_path = "{}/ckpt/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_tn{}_ng{}_crf{}_best2.pt".format(
+    save_path = "{}/ckpt1w/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_tn{}_ng{}_crf{}_wd{}_best2.pt".format(
         args['parent_path'], args['batch_size'], args['lr'], args['epochs'], 
         args['emb_dim'], args['drop_prob'], args['tf_ratio'], args['topn'], 
-        args['neg_nums'], args['use_crf'])
+        args['neg_nums'], args['use_crf'], args['wd'])
     root_path = osp.join(args['parent_path'], args['data_dir'])
     trainset = MyDataset(root_path, "train")
     valset = MyDataset(root_path, "val")
@@ -115,7 +117,7 @@ def main(args):
                 atten_flag=args['atten_flag'],
                 drop_prob=args['drop_prob'])
     model = model.to(device)
-    best_acc, best_model = 0., None
+    best_acct, best_model = 0., None
     print("Loading model Done!!!")
     # loss_fn = nn.NLLLoss()
     optimizer = optim.AdamW(params=model.parameters(),
@@ -124,30 +126,28 @@ def main(args):
     for e in range(args['epochs']):
         print(f"================Epoch: {e + 1}================")
         train_avg_loss = train(model, train_iter, optimizer, device, gdata, args)
-        val_avg_acc = evaluate(model, val_iter, device, gdata, args['use_crf'])
-        if best_acc < val_avg_acc:
+        val_acct, _ = evaluate(model, val_iter, device, gdata, args['use_crf'])
+        if best_acct < val_acct:
             best_model = deepcopy(model)
-            best_acc = val_avg_acc
-        print("Epoch {}: train_avg_loss {} eval_avg_acc: {}".format(
-            e + 1, train_avg_loss, val_avg_acc))
-        nni.report_intermediate_result(val_avg_acc)
+            best_acc = val_acct
+        print("Epoch {}: train_avg_loss {} val_acct: {}".format(e + 1, train_avg_loss, val_acct))
+        nni.report_intermediate_result(val_acct)
 
     # train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, args['use_crf'])
     # print(f"trainset: acc({train_avg_acc})")
-    test_avg_acc = evaluate(best_model, test_iter, device, gdata, args['use_crf'])
+    test_acc_t, test_avg_lcs = evaluate(best_model, test_iter, device, gdata, args['use_crf'])
     nni.report_final_result(test_avg_acc)
-    print(f"testset: acc({test_avg_acc})")
+    print(f"testset: acct({test_avg_acc:.4f}) avg_lcs({test_avg_lcs:.4f})")
     torch.save(best_model.state_dict(), save_path)
 
 
 if __name__ == "__main__":
     try:
         tuner_params = nni.get_next_parameter()
-        if tuner_params:
-            if tuner_params['tf_ratio'] == 0:
-                tuner_params['tf_ratio'] = 0.0
-            if tuner_params['drop_prob'] == 0:
-                tuner_params['drop_prob'] = 0.0
+        if tuner_params.get('tf_ratio') and tuner_params['tf_ratio'] == 0:
+            tuner_params['tf_ratio'] = 0.0
+        if tuner_params.get('drop_prob') and tuner_params['drop_prob'] == 0:
+            tuner_params['drop_prob'] = 0.0
         params = vars(merge_parameter(get_params(), tuner_params))
         print(params)
         main(params)

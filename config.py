@@ -13,8 +13,7 @@ def get_params():
     parser.add_argument(
         "--data_dir",
         type=str,
-        default="gmm-data0.5",
-        choices=["gmm-data0.5", "gmm-data0.25", "gmm-data0.125"])
+        default="gmm-data0.5")
     parser.add_argument("--emb_dim", type=int, default=256)
     parser.add_argument("--layer", type=int, default=4)
     parser.add_argument("--wd", type=float, default=1e-8)
@@ -26,7 +25,7 @@ def get_params():
     parser.add_argument("--drop_prob", type=float, default=0.5)
     parser.add_argument("--gamma", type=float, default=10000)
     parser.add_argument("--topn", type=int, default=5)
-    parser.add_argument("--neg_nums", type=int, default=500)
+    parser.add_argument("--neg_nums", type=int, default=800)
     args, _ = parser.parse_known_args()
 
     return args
