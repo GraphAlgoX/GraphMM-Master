@@ -13,7 +13,7 @@ import torch.nn as nn
 from sklearn.metrics import accuracy_score
 import os.path as osp
 from copy import deepcopy
-
+from data_preprocess.utils import create_dir
 
 def train(model, train_iter, optimizer, device, gdata, args):
     model.train()
@@ -73,14 +73,17 @@ def evaluate(model, eval_iter, device, gdata, use_crf):
 
 
 def main(args):
+    create_dir(f"{args['root_path']}/ckpt/")
     save_path = "{}/ckpt/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_tn{}_ng{}_crf{}_wd{}_best.pt".format(
-        args['parent_path'], args['batch_size'], args['lr'], args['epochs'],
+        args['root_path'], args['batch_size'], args['lr'], args['epochs'],
         args['emb_dim'], args['drop_prob'], args['tf_ratio'], args['topn'],
         args['neg_nums'], args['use_crf'], args['wd'])
-    root_path = osp.join(args['parent_path'], args['data_dir'])
-    trainset = MyDataset(root_path, "train")
-    valset = MyDataset(root_path, "val")
-    testset = MyDataset(root_path, "test")
+    root_path = args['root_path']
+
+    data_path = osp.join(args['root_path'], 'data'+str(args['downsample_rate']) + '/')
+    trainset = MyDataset(root_path=root_path, path=data_path, name="train")
+    valset = MyDataset(root_path=root_path, path=data_path, name="val")
+    testset = MyDataset(root_path=root_path, path=data_path, name="test")
     train_iter = DataLoader(dataset=trainset,
                             batch_size=args['batch_size'],
                             shuffle=True,
@@ -94,6 +97,7 @@ def main(args):
     print("loading dataset finished!")
     device = torch.device(f"cuda:{args['dev_id']}" if torch.cuda.is_available() else "cpu")
     gdata = GraphData(root_path=root_path,
+                      data_path=data_path,
                       layer=args['layer'],
                       gamma=args['gamma'],
                       device=device)
@@ -125,8 +129,7 @@ def main(args):
         print("Epoch {}: train_avg_loss {} val_avg_acc: {}".format(e + 1, train_avg_loss, val_acc))
         nni.report_intermediate_result(val_acc)
 
-    # train_avg_acc, _, _ = evaluate(best_model, train_iter, device, gdata, args['use_crf'])
-    # print(f"trainset: acc({train_avg_acc})")
+
     test_acc = evaluate(best_model, test_iter, device, gdata, args['use_crf'])
     nni.report_final_result(test_acc)
     print(f"test_avg_acc: {test_acc:.4f}")

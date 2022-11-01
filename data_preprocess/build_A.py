@@ -1,5 +1,8 @@
 import pickle
 import torch
+"""
+    build adjacency matrix of road_graph
+"""
 data_path = '../data/'
 road_graph = pickle.load(open(data_path + 'road_graph.pkl', 'rb'))
 n = road_graph.number_of_nodes()

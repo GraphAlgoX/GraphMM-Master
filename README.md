@@ -18,11 +18,18 @@ nni: 2.9 # https://github.com/microsoft/nni
 
 ## Run Examples
 
+data preprocess
+```
+bash data_preprocess.sh
+```
+
 Training gmm with crf:
+
+>modify the root_path in `config.py` to the absolute path where `road.txt` in
 
 ```shell
 # way 1
-python train_gmm.py --dev_id 0 --batch_size 32 --eval_bsize 32 --atten_flag --bi --use_crf --data_dir {your data dir}
+python train_gmm.py --dev_id 0 --batch_size 32 --eval_bsize 32 --atten_flag --bi --use_crf --parent_path {your data dir} --downsample_rate {your downsample_rate}
 
 # way 2
 # first modify your configuration and hyper-parameter search space, then run following command
@@ -35,7 +42,7 @@ Training gmm without crf:
 
 ```shell
 # way 1
-python train_gmm.py --dev_id 0 --batch_size 256 --eval_bsize 256 --atten_flag --bi --data_dir {your data dir}
+python train_gmm.py --dev_id 0 --batch_size 256 --eval_bsize 256 --atten_flag --bi --parent_path {your data dir} --downsample_rate {your downsample_rate}
 
 # way 2
 nnictl create --config exp_local.yml
@@ -45,13 +52,13 @@ Evaluate gmm with crf:
 
 ```shell
 # First set the ckpt_path with your trained model, then run
-python test.py --atten_flag --bi --use_crf --data_dir {your data dir} --eval_bsize 32
+python test.py --atten_flag --bi --use_crf --parent_path {your data dir} --eval_bsize 32 --downsample_rate {your downsample_rate}
 ```
 
 Evaluate gmm without crf:
 
 ```shell
-python test.py --atten_flag --bi --data_dir {your data dir} --eval_bsize 256
+python test.py --atten_flag --bi --parent_path {your data dir} --eval_bsize 256 --downsample_rate {your downsample_rate}
 ```
 
 

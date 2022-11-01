@@ -3,13 +3,18 @@ import torch
 import json
 import pickle
 from torch.utils.data import Dataset
-import utils.utils as utils
-
+import data_preprocess.utils as utils
 
 class MyDataset(Dataset):
-    def __init__(self, root_path, name):
-        self.data_path = osp.join(root_path, f"data/{name}_data/{name}.json")
-        self.map_path = osp.join(root_path, "used_pkl/grid2traceid_dict.pkl")
+    def __init__(self, root_path, path, name):
+        # parent_path = 'path'
+        if not root_path.endswith('/'):
+            root_path += '/'
+        self.MIN_LAT, self.MIN_LNG, MAX_LAT, MAX_LNG = utils.get_border(root_path + 'road.txt')
+        if not path.endswith('/'):
+            path += '/'
+        self.data_path = osp.join(path, f"{name}_data/{name}.json")
+        self.map_path = osp.join(path, "used_pkl/grid2traceid_dict.pkl")
         self.buildingDataset(self.data_path)
 
     def buildingDataset(self, data_path):
@@ -20,7 +25,7 @@ class MyDataset(Dataset):
             for gps_ls in data[0::3]:
                 traces = []
                 for gps in gps_ls:
-                    gridx, gridy = utils.gps2grid(gps[0], gps[1])
+                    gridx, gridy = utils.gps2grid(gps[0], gps[1], MIN_LAT=self.MIN_LAT, MIN_LNG=self.MIN_LNG)
                     traces.append(grid2traceid_dict[(gridx, gridy)] + 1)
                 self.traces_ls.append(traces)
             self.roads_ls = data[1::3]

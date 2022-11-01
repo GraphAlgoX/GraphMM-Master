@@ -8,6 +8,9 @@ MIN_LAT, MIN_LNG, MAX_LAT, MAX_LNG = get_border('../data/road.txt')
 GRID_SIZE = 50
 
 def read_road(path: str) -> dict:
+    """
+        read road.txt
+    """
     link_nodes_dict = {}
     cr = re.compile(r"(\d*)\t(.*?)\t(.*?)\t(.*?)\t(.*?)\t(.*?)\t(.*?)\|(.*)")
     with open(path, 'r') as f:
@@ -29,6 +32,9 @@ def read_road(path: str) -> dict:
 
 
 def construct_road_graph(roads: dict):
+    """
+        build road_graph networkx
+    """
     graph = nx.Graph()
     link_dict = {}
     for road in roads.values():
@@ -58,6 +64,9 @@ def construct_road_graph(roads: dict):
     return graph
 
 def build_x_edge_index(G):
+    """
+        build feature and edge_index for road graph
+    """
     x_feat = []
     num = G.number_of_nodes()
     

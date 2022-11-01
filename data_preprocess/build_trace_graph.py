@@ -8,6 +8,9 @@ MIN_LAT, MIN_LNG, MAX_LAT, MAX_LNG = get_border('../data/road.txt')
 GRID_SIZE = 50
 
 def get_data(path):
+    """
+        read trace.txt
+    """
     grid2id_dict = {}
     trace_dict = {}
     with open(path, 'r') as f:
@@ -39,6 +42,9 @@ def get_data(path):
 
 
 def build_graph(grid2id_dict, trace_dict):
+    """
+        build trace graph
+    """
     G = nx.DiGraph()
     weighted_edges = []
     for k, v in trace_dict.items():
@@ -53,6 +59,9 @@ def build_graph(grid2id_dict, trace_dict):
 
 
 def build_pyG(G):
+    """
+        build feature and edge_index for trace graph
+    """
     edge_index = [[], []]
     x = []
     weight = []

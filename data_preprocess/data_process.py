@@ -10,7 +10,7 @@ GRID_SIZE = 50
 
 def randomDownSampleBySize(sampleData: list, sampleRate: float) -> list:
     """
-    randomly sampling
+        randomly sampling
     """
     resData, pureData, resIdx = [], [], []
     for i in range(len(sampleData)):
@@ -47,7 +47,9 @@ class DataProcess():
                     f.write(trace)
 
     def readTrajFile(self, filePath):
-        full_lens = 0
+        """
+            read trace.txt
+        """
         with open(filePath, 'r') as f:
             traj_list = f.readlines()
         finalLs = list()  # 用来保存所有轨迹
@@ -59,25 +61,12 @@ class DataProcess():
                 tempLs = [sen]
             else:  # 增加轨迹点
                 tempLs.append(sen)
-        
+        finalLs.append(tempLs)
         return finalLs
-
-    def getSuitableCut(self, beginLs):
-        num_of_trace = len(beginLs)
-        trace_lens_ls = [len(i)-1 for i in beginLs]
-        sum_lens = sum(trace_lens_ls)
-        avg_lens = (0.0+sum_lens)/num_of_trace
-        d = 0.0
-        for i in trace_lens_ls:
-            d += (i-avg_lens)**2
-        sd = math.sqrt(d/num_of_trace)
-        suitable_cut = avg_lens + 2*sd
-        print(f'sum_lens = {sum_lens}, avg_lens = {avg_lens}, sd = {sd}, suitable_cut = {suitable_cut}')
-        return suitable_cut
 
     def sampling(self):
         """
-        down sampling
+            down sampling
         """
         downsampleData, pureData, downsampleIdx = randomDownSampleBySize(self.finalLs, self.sample_rate)
         traces_ls, roads_ls = [], []
@@ -98,7 +87,9 @@ class DataProcess():
         return traces_ls, roads_ls, downsampleIdx, downsampleData
 
     def cutData(self, beginLs): 
-        # each trace [min_lens+1, max_lens+min_lens+1) 
+        """
+            ensure each trace's length in [min_lens+1, max_lens+min_lens+1) 
+        """
         finalLs = []
         for traces in beginLs:
             assert traces[0][0] == '#'
@@ -135,7 +126,7 @@ class DataProcess():
 
     def splitData(self, output_dir, train_rate=0.7, val_rate=0.1):
         """
-        split original data to train, valid and test datasets
+            split original data to train, valid and test datasets
         """
         create_dir(output_dir)
         create_dir(output_dir + 'data_split/')

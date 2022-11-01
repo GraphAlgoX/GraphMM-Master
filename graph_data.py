@@ -6,18 +6,21 @@ import os.path as osp
 
 
 class GraphData():
-    def __init__(self, root_path, layer, gamma, device) -> None:
+    def __init__(self, root_path, data_path, layer, gamma, device) -> None:
         self.device = device
-        data_path = osp.join(root_path, 'data/')
         # load trace graph and road graph
-        road_graph = pickle.load(open(data_path + 'road_graph.pkl', 'rb'))
+        if not root_path.endswith('/'):
+            root_path += '/'
+        if not data_path.endswith('/'):
+            data_path += '/'
+        road_graph = pickle.load(open(root_path + 'road_graph.pkl', 'rb'))
         trace_graph = nx.read_gml(data_path + 'trace_graph.gml',
                                   destringizer=int)
         self.num_roads = road_graph.number_of_nodes()
         self.num_grids = trace_graph.number_of_nodes()
         # load edge weight of trace graph and road graph
         trace_pt_path = data_path + 'trace_graph_pt/'
-        road_pt_path = data_path + 'road_graph_pt/'
+        road_pt_path = root_path + 'road_graph_pt/'
         # 2*num_of_edges
         self.trace_weight = torch.load(trace_pt_path + 'inweight.pt').float().to(device)
         self.trace_in_edge_index = torch.load(trace_pt_path + 'in_edge_index.pt').to(device)
@@ -38,7 +41,7 @@ class GraphData():
         self.map_matrix = torch.load(trace_pt_path +
                                      'map_matrix.pt').to(device)
         # load map dictonary
-        pkl_path = osp.join(root_path, 'used_pkl/')
+        pkl_path = osp.join(data_path, 'used_pkl/')
         self.grid2traceid_dict = pickle.load(
             open(pkl_path + 'grid2traceid_dict.pkl', 'rb'))
         self.traceid2grid_dict = {
@@ -46,7 +49,7 @@ class GraphData():
             for k, v in self.grid2traceid_dict.items()
         }
         # gain A^k
-        A = torch.load(data_path+'A.pt')
+        A = torch.load(road_pt_path+'A.pt')
         # A_list [n, n]
         self.A_list = self.get_adj_poly(A, layer, gamma)
     

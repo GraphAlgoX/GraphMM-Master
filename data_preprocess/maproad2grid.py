@@ -21,10 +21,13 @@ for k, v in dict(trace_graph.nodes()).items():
     grid2traceid_dict[pair] = k
 
 pickle.dump(grid2traceid_dict, open(pkl_path + 'grid2traceid_dict.pkl', 'wb'))
-print('finished')
+
 
 
 def road2grid():
+    """
+        road -> grid dict
+    """
     road2grid_dict = {}
     grid2road_dict = {}
     for k, v in dict(road_graph.nodes()).items():
@@ -48,6 +51,9 @@ grid2road_dict, road2grid_dict = road2grid()
 
 
 def road2traceid():
+    """
+        road -> traceid dict
+    """
     road2grid_dict = pickle.load(open(pkl_path + 'road2grid_dict.pkl', 'rb'))
     grid2traceid_dict = pickle.load(open(pkl_path + 'grid2traceid_dict.pkl', 'rb'))
     road2traceid_dict = {}

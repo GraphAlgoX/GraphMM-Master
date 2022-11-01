@@ -12,7 +12,10 @@ EARTH_MEAN_RADIUS_METER = 6371008.7714
 DEG_TO_KM = DEGREES_TO_RADIANS * EARTH_MEAN_RADIUS_METER
 
 def get_border(path):
-    MAX_LAT, MAX_LNG, MIN_LAT, MIN_LNG = -360, -360, 360, 360
+    """
+        get the min(max) LAT(LNG)
+    """
+    MIN_LAT, MIN_LNG, MAX_LAT, MAX_LNG = 360, 360, -360, -360
     with open(path, 'r') as f:
         road_ls = f.readlines()
     for road in road_ls:
@@ -70,6 +73,9 @@ def gps2grid_batch(gps, grid_size=GRID_SIZE):
 
 
 def grid2gps(gridx1, gridy1, gridx2, gridy2, MIN_LAT, MIN_LNG, grid_size=GRID_SIZE):
+    """
+        return gps for each grid
+    """
     LAT_PER_METER = 8.993203677616966e-06
     LNG_PER_METER = 1.1700193970443768e-05
     lat_unit = LAT_PER_METER * grid_size

@@ -43,15 +43,20 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
 
 
 args = vars(get_params())
-ckpt_path = "/data/LuoWei/Code/ckpt1w/bz32_lr0.0001_ep250_edim256_dp0.5_tf0.3_tn5_ng800_crfTrue_wd1e-08_best2.pt"
-root_path = osp.join(args['parent_path'], args['data_dir'])
-testset = MyDataset(root_path, "test")
+root_path = args['root_path']
+
+data_path = osp.join(args['root_path'], 'data'+str(args['downsample_rate']) + '/')
+    
+ckpt_path = "data/ckpt/bz256_lr0.0001_ep5_edim256_dp0.5_tf0.5_tn5_ng800_crfFalse_wd1e-08_best.pt"
+
+testset = MyDataset(root_path=root_path, path=data_path, name="test")
 test_iter = DataLoader(dataset=testset,
                        batch_size=args['eval_bsize'],
                        collate_fn=padding)
 print("loading dataset finished!")
 device = torch.device(f"cuda:{args['dev_id']}" if torch.cuda.is_available() else "cpu")
 gdata = GraphData(root_path=root_path,
+                  data_path=data_path,
                   layer=args['layer'],
                   gamma=args['gamma'],
                   device=device)
