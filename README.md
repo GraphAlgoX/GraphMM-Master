@@ -33,7 +33,7 @@ python train_gmm.py --dev_id 0 --batch_size 32 --eval_bsize 32 --atten_flag --bi
 
 # way 2
 # first modify your configuration and hyper-parameter search space, then run following command
-nnictl create --config exp_local.yml
+nnictl create --config exp_local.yml -p {specified port, default 8080}
 ```
 
 > The batch_size and eval_bsize can be setted based on your GPU memory size!
@@ -45,7 +45,7 @@ Training gmm without crf:
 python train_gmm.py --dev_id 0 --batch_size 256 --eval_bsize 256 --atten_flag --bi --root_path {your data dir} --downsample_rate {your downsample_rate}
 
 # way 2
-nnictl create --config exp_local.yml
+nnictl create --config exp_local.yml -p {specified port, default 8080}
 ```
 
 Evaluate gmm with crf:
