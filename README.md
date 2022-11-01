@@ -18,7 +18,7 @@ nni: 2.9 # https://github.com/microsoft/nni
 
 ## Run Examples
 
-data preprocess
+Data preprocess:
 ```
 bash data_preprocess.sh
 ```
@@ -61,7 +61,7 @@ Evaluate gmm without crf:
 python test.py --atten_flag --bi --parent_path {your data dir} --eval_bsize 256 --downsample_rate {your downsample_rate}
 ```
 
-
+The hyper parameters in `config.py` are tuned for Tencent dataset with 64K trajectories, and may not be suitable for other settings.
 
 ## Note
 
