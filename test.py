@@ -42,7 +42,7 @@ def evaluate(model, eval_iter, device, gdata, tf_ratio, use_crf):
     return acc_t, avg_lcs
 
 args = vars(get_params())
-ckpt_path = "/data/LuoWei/Code/ckpt1w/bz32_lr0.0001_ep300_edim256_dp0.6_tf0.5_tn5_ng800_crfTrue_best2.pt"
+ckpt_path = "/data/LuoWei/Code/ckpt1w/bz32_lr0.0001_ep250_edim256_dp0.5_tf0.3_tn5_ng800_crfTrue_wd1e-08_best2.pt"
 root_path = osp.join(args['parent_path'], args['data_dir'])
 testset = MyDataset(root_path, "test")
 test_iter = DataLoader(dataset=testset,
