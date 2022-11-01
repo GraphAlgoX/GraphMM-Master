@@ -45,11 +45,11 @@ class GMM(nn.Module):
     def forward(self, grid_traces, tgt_roads, traces_gps, traces_lens,
                 road_lens, gdata, sample_Idx, tf_ratio):
         """
-        grid_traces: id of traj points, (batch_size, seq_len, emb_size)
-        tgt_roads: ground truth, (batch_size, seq_len1, emb_size)
+        grid_traces: id of traj points, (batch_size, seq_len)
+        tgt_roads: ground truth, (batch_size, seq_len1)
         traces_gps: gps location of traj points, (batch_size, seq_len, 2)
-        sample_Idx: (batch_size, seq_len, 1)
-        traces_lens, road_lens: (batch_size, )
+        sample_Idx: (batch_size, seq_len)
+        traces_lens, road_lens: list, real length of traj/ground truth
         """
         full_road_emb, full_grid_emb = self.get_emb(gdata)
         emissions = self.get_probs(grid_traces=grid_traces,
@@ -102,7 +102,7 @@ class GMM(nn.Module):
 
     def get_emb(self, gdata):
         """
-        gain road embedding and grid embedding
+        get road embedding and grid embedding
         """
         # road embedding, (num_roads, embed_dim)
         road_x = self.road_feat_fc(gdata.road_x)

@@ -5,7 +5,7 @@ import torch.optim as optim
 from config import get_params
 from nni.utils import merge_parameter
 from model.gmm import GMM
-from utils_gq.data_loader import MyDataset, padding
+from data_loader import MyDataset, padding
 from torch.utils.data import DataLoader
 from graph_data import GraphData
 from tqdm import tqdm
@@ -18,16 +18,12 @@ from copy import deepcopy
 def train(model, train_iter, optimizer, device, gdata, args):
     model.train()
     train_l_sum, count = 0., 0
-
-    for idx, data in enumerate(train_iter):
-        # model.init_cache()
-        # print('finish init!')
+    for data in train_iter:
         grid_traces = data[0].to(device)
         tgt_roads = data[1].to(device)
         traces_gps = data[2].to(device)
         sample_Idx = data[3].to(device)
-        traces_lens = torch.tensor(data[4])
-        road_lens = torch.tensor(data[5])
+        traces_lens, road_lens = data[4], data[5]
         loss = model(grid_traces=grid_traces,
                      traces_gps=traces_gps,
                      traces_lens=traces_lens,
@@ -56,8 +52,7 @@ def evaluate(model, eval_iter, device, gdata, use_crf):
             tgt_roads = data[1]
             traces_gps = data[2].to(device)
             sample_Idx = data[3].to(device)
-            traces_lens = data[4]
-            road_lens = data[5]
+            traces_lens, road_lens = data[4], data[5]
             infer_seq = model.infer(grid_traces=grid_traces,
                                     traces_gps=traces_gps,
                                     traces_lens=traces_lens,
@@ -78,9 +73,9 @@ def evaluate(model, eval_iter, device, gdata, use_crf):
 
 
 def main(args):
-    save_path = "{}/ckpt/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_tn{}_ng{}_crf{}_wd{}_best2.pt".format(
-        args['parent_path'], args['batch_size'], args['lr'], args['epochs'], 
-        args['emb_dim'], args['drop_prob'], args['tf_ratio'], args['topn'], 
+    save_path = "{}/ckpt/bz{}_lr{}_ep{}_edim{}_dp{}_tf{}_tn{}_ng{}_crf{}_wd{}_best.pt".format(
+        args['parent_path'], args['batch_size'], args['lr'], args['epochs'],
+        args['emb_dim'], args['drop_prob'], args['tf_ratio'], args['topn'],
         args['neg_nums'], args['use_crf'], args['wd'])
     root_path = osp.join(args['parent_path'], args['data_dir'])
     trainset = MyDataset(root_path, "train")
@@ -96,8 +91,7 @@ def main(args):
     test_iter = DataLoader(dataset=testset,
                            batch_size=args['eval_bsize'],
                            collate_fn=padding)
-    print("Loading Dataset Done!!!")
-    # args['dev_id'] = 1 if args['use_gcn'] else 0
+    print("loading dataset finished!")
     device = torch.device(f"cuda:{args['dev_id']}" if torch.cuda.is_available() else "cpu")
     gdata = GraphData(root_path=root_path,
                       layer=args['layer'],
@@ -115,15 +109,16 @@ def main(args):
                 drop_prob=args['drop_prob'])
     model = model.to(device)
     best_acc, best_model = 0., None
-    print("Loading model Done!!!")
-    # loss_fn = nn.NLLLoss()
+    print("loading model finished!")
     optimizer = optim.AdamW(params=model.parameters(),
                             lr=args['lr'],
                             weight_decay=args['wd'])
+    # start training
     for e in range(args['epochs']):
         print(f"================Epoch: {e + 1}================")
         train_avg_loss = train(model, train_iter, optimizer, device, gdata, args)
         val_acc = evaluate(model, val_iter, device, gdata, args['use_crf'])
+        # choose model based on val_acc
         if best_acc < val_acc:
             best_model = deepcopy(model)
             best_acc = val_acc

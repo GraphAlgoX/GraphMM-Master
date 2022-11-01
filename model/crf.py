@@ -9,7 +9,13 @@ class CRF(nn.Module):
     Conditional random field.
     """
 
-    def __init__(self, num_tags, emb_dim, topn, neg_nums, device='cpu', batch_first=True) -> None:
+    def __init__(self,
+                 num_tags,
+                 emb_dim,
+                 topn,
+                 neg_nums,
+                 device='cpu',
+                 batch_first=True) -> None:
         super().__init__()
         self.num_tags = num_tags
         self.batch_first = batch_first

@@ -1,7 +1,4 @@
 {
     "lr":{"_type":"choice", "_value": [0.0001, 0.0005]},
-    "emb_dim":{"_type":"choice", "_value": [256]},
-    "tf_ratio":{"_type":"choice", "_value": [0.2, 0.5, 0.8]},
-    "drop_prob":{"_type":"choice", "_value": [0.5]},
-    "neg_nums":{"_type":"choice", "_value": [800]}
+    "tf_ratio":{"_type":"choice", "_value": [0.2, 0.5, 0.8]}
 }
