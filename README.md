@@ -29,7 +29,7 @@ Training gmm with crf:
 
 ```shell
 # way 1
-python train_gmm.py --dev_id 0 --batch_size 32 --eval_bsize 32 --atten_flag --bi --use_crf --parent_path {your data dir} --downsample_rate {your downsample_rate}
+python train_gmm.py --dev_id 0 --batch_size 32 --eval_bsize 32 --atten_flag --bi --use_crf --root_path {your data dir} --downsample_rate {your downsample_rate}
 
 # way 2
 # first modify your configuration and hyper-parameter search space, then run following command
@@ -42,7 +42,7 @@ Training gmm without crf:
 
 ```shell
 # way 1
-python train_gmm.py --dev_id 0 --batch_size 256 --eval_bsize 256 --atten_flag --bi --parent_path {your data dir} --downsample_rate {your downsample_rate}
+python train_gmm.py --dev_id 0 --batch_size 256 --eval_bsize 256 --atten_flag --bi --root_path {your data dir} --downsample_rate {your downsample_rate}
 
 # way 2
 nnictl create --config exp_local.yml
@@ -52,13 +52,13 @@ Evaluate gmm with crf:
 
 ```shell
 # First set the ckpt_path with your trained model, then run
-python test.py --atten_flag --bi --use_crf --parent_path {your data dir} --eval_bsize 32 --downsample_rate {your downsample_rate}
+python test.py --atten_flag --bi --use_crf --root_path {your data dir} --eval_bsize 32 --downsample_rate {your downsample_rate}
 ```
 
 Evaluate gmm without crf:
 
 ```shell
-python test.py --atten_flag --bi --parent_path {your data dir} --eval_bsize 256 --downsample_rate {your downsample_rate}
+python test.py --atten_flag --bi --root_path {your data dir} --eval_bsize 256 --downsample_rate {your downsample_rate}
 ```
 
 The hyper parameters in `config.py` are tuned for Tencent dataset with 64K trajectories, and may not be suitable for other settings.
