@@ -54,7 +54,7 @@ class GraphData():
         self.A_list = self.get_adj_poly(A, layer, gamma)
     
     def get_adj_poly(self, A, layer, gamma):
-        A_ = (A + torch.eye(self.num_roads)).to(self.device)
+        A_ = A.to(self.device)
         ans = A_.clone()
         for _ in range(layer-1):
             ans = ans @ A_
