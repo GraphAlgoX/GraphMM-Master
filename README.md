@@ -1,7 +1,5 @@
 # GraphMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations
 
-The repository is the official Pytorch implementation of experiments in **GraphMM**.
-
 Source code of the TKDE'23: [GraphMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations](https://ieeexplore.ieee.org/document/10158034)
 
 
