@@ -1,18 +1,24 @@
 # GraphMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations
 
-The repository is the official Pytorch implementation of experiments in GraphMM.
+The repository is the official Pytorch implementation of experiments in **GraphMM**.
+
+Source code of the TKDE'23: [GraphMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations](https://ieeexplore.ieee.org/document/10158034)
 
 
 
-## Experiment Configuration
+## GraphMM Architecture
 
-```
-Python: 3.7.13
-Pytorch: 1.10.1
-PyG: 2.0.4
-networkx: 2.6.3
-nni: 2.9 # https://github.com/microsoft/nni
-```
+<p align="center"><img src="./images/GraphMM.jpg"></p>
+
+
+
+## Requirements
+
+- `Python: 3.7.13`
+- `Pytorch: 1.10.1`
+- `PyG: 2.0.4`
+- `networkx: 2.6.3`
+- `nni: 2.9 # https://github.com/microsoft/nni`
 
 
 
@@ -62,6 +68,27 @@ python test.py --atten_flag --bi --root_path {your data dir} --eval_bsize 256 --
 ```
 
 The hyper parameters in `config.py` are tuned for Tencent dataset with 64K trajectories, and may not be suitable for other settings.
+
+
+
+## Citations
+
+If you find this repo useful and would like to cite it, citing our paper as following will be appropriate:
+
+```
+@ARTICLE{10158034,
+  author={Liu, Yu and Ge, Qian and Luo, Wei and Huang, Qiang and Zou, Lei and Wang, Haixu and Li, Xin and Liu, Chang},
+  journal={IEEE Transactions on Knowledge and Data Engineering}, 
+  title={GraphMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations}, 
+  year={2023},
+  volume={},
+  number={},
+  pages={1-14},
+  doi={10.1109/TKDE.2023.3287739}
+}
+```
+
+
 
 ## Note
 
