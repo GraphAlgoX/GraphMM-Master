@@ -1,6 +1,12 @@
 # GraphMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations
 
-Source code of the TKDE'23: [GraphMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations](https://ieeexplore.ieee.org/document/10158034)
+This is a Python implementation of 
+
+> GraphMM: Graph-based Vehicular Map Matching by Leveraging Trajectory and Road Correlations
+>
+> Yu Liu, Qian Ge, Wei Luo, Qiang Huang, Lei Zou, Haixu Wang, Xin Li, Chang Liu
+>
+> TKDE 2023 [PDF](https://ieeexplore.ieee.org/document/10158034)
 
 
 
