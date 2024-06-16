@@ -10,7 +10,7 @@ This is a Python implementation of
 
 
 ## Full Dataset Available
-   The full dataset containing 64k trajectories has now been uploaded and can be accessed and downloaded via the link [trace.txt](https://drive.google.com/file/d/1L8IeRn9GTWVHm6qlwrK_oTsdGq-UC3At/view?usp=sharing). If you want to conduct experiments with this dataset, you need to replace the original `trace.txt` in the `data` directory with this file and re-run the `data_preprocess.sh` script. The `road.txt` does not need to be changed.
+   The full dataset has now been uploaded and can be accessed and downloaded via the link [trace.txt](https://drive.google.com/file/d/1L8IeRn9GTWVHm6qlwrK_oTsdGq-UC3At/view?usp=sharing). If you want to conduct experiments with this dataset, you need to replace the original `trace.txt` in the `data` directory with this file and re-run the `data_preprocess.sh` script. The `road.txt` does not need to be changed.
 
 
 
